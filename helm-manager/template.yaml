@@ -1,0 +1,142 @@
+{{ $globalValue := .Values }}
+
+{{ range .Values.components }}
+{{ if .active }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}-deployment
+  labels:
+    app: {{ .name }}-deployment
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ .name }}-deployment
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-deployment
+    spec:
+      {{ if .ports}}
+      hostname: {{ .name }}
+      {{ end }}
+      containers:
+      - name: {{ .name }}-container
+        image: {{ .image }}
+        {{ if .ports }}
+        ports:
+        {{ range .ports }}
+        - name: {{ .port }}-{{ .protocol | lower | default "port" }}
+          containerPort: {{ .port }}
+        {{ end }}
+        {{ end }}
+
+        {{- if .environment }}
+        env:
+        {{ range .environment }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        {{- end }}
+
+        {{- if .commands }}
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+            {{ range .commands }}
+            {{ .command }}
+            {{ end }}
+        {{ end }}
+
+        {{- if .volumes }}
+        volumeMounts:
+        {{- range .volumes }}
+        - name: {{ .name }}
+          mountPath: {{ .mountPath }}
+          {{- if .file }}
+          {{- $filename := base .file }}
+          subPath: {{ $filename }}
+          {{ end }}
+        {{- end }}
+        {{- end }}
+
+      {{- if .volumes }}
+      volumes:
+      {{- range .volumes }}
+      - name: {{ .name }}
+      {{- $sourcePath := "" }}
+         {{- $sourcePath = .directory }}
+         {{- if .file }}
+           {{- $sourcePath = .file }}
+         {{- end }}
+      {{- if $globalValue.nfsIp }}
+        nfs:
+          server: {{ $globalValue.nfsIp }}
+          path: /{{ $globalValue.rootDirectory }}{{ if .file }}{{ dir $sourcePath }}{{ else }}{{ $sourcePath }}{{ end }}
+      {{- else }}
+        hostPath:
+          path: /{{ $globalValue.rootDirectory }}{{ if .file }}{{ dir $sourcePath }}{{ else }}{{ $sourcePath }}{{ end }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+---
+{{ if .ports}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+  labels:
+    app: {{ .name }}
+spec:
+  {{ range .ports }}
+  {{ if .hostPort }}
+  type: NodePort
+  {{ end }}
+  {{ end }}
+  selector:
+    app: {{ .name }}-deployment
+  ports:
+  {{- range .ports }}
+  - name: {{ .port }}-{{ .protocol |  lower | default "port" }}
+    protocol: {{ .protocol | default "TCP" }}
+    port: {{ .port }}
+    targetPort: {{ .port }}
+    {{ if .hostPort }}
+    nodePort: {{ .hostPort }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+---
+
+{{ if .jobs }}
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .name }}-job
+  labels:
+    app: {{ .name }}-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}-job
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: {{ .name }}-job
+        image: {{ .jobs.image}}
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+        {{- range .jobs.commands }}
+            {{ .command }}
+        {{- end }}
+
+---
+{{ end }}
+
+{{ end }}
+{{ end }}

@@ -1,0 +1,21 @@
+# Binaries
+server
+
+# Dependency directories
+vendor/
+values/
+
+# Go specific files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.o
+*.a
+
+# System files
+.DS_Store
+Thumbs.db

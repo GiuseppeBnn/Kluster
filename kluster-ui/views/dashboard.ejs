@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link href="/styles.css" rel="stylesheet" type="text/css" />
+  </head>
+
+  <body class="bg-content text-secondary">
+    <%- include('components/layout/header') %>
+    <div class="w-full flex flex-col min-h-screen p-8" id="dp-container"></div>
+    <script>
+      const parser = new DOMParser();
+      reloadCharts();
+      ////////////////////////////
+      function reloadCharts() {
+        const dp_container = document.getElementById("dp-container");
+        //create a new div element that contains
+        fetch("/charts-status")
+          .then((response) => response.text())
+          .then((data) => {
+            dp_container.innerHTML = data;
+          })
+          .then(() => {
+            console.log("Charts status loaded");
+            activeButtons(dp_container);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      function reloadChart(chartJwt){
+        const container = document.getElementById(`chart-container-${chartJwt}`);
+        fetch(`/chart-status/${chartJwt}`)
+          .then((response) => response.text())
+          .then((data) => {
+            //convertire data in HTMLelement ed estrarre il contenuto
+            const doc = convertDataToHtml(data);
+            const chart = doc.getElementById(`chart-container-${chartJwt}`);
+            container.innerHTML = chart.innerHTML;
+          })
+          .then(() => {
+            console.log("Chart status loaded");
+            activeButtons(container);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      function convertDataToHtml(data) {
+        return parser.parseFromString(data, "text/html");
+      }
+      function activeButtons(container) {
+        activePlayButtons(container);
+        activeStopButtons(container);
+        activeDeleteButtons(container);
+      }
+      function splitId(id) {
+        let splitIndex = id.indexOf("-");
+        return id.substring(splitIndex + 1);
+      }
+
+      function activePlayButtons(container) {
+        const playButtons = container.querySelectorAll("[id^='play-']");
+        playButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            let chart = splitId(event.target.id);
+            console.log(chart);
+            fetch(`/play/${chart}`,
+              { method: "PATCH" }
+            )
+              .then((response) => response.text())
+              .then(() => reloadChart(chart))
+              .catch((error) => {
+              console.error("Error:", error);
+              });
+          });
+        });
+      }
+      function activeStopButtons(container) {
+        const stopButtons = container.querySelectorAll("[id^='stop-']");
+        stopButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const chart = event.target.id.split("-")[1];
+            fetch(`/stop/${chart}`,
+              { method: "PATCH" }
+            )
+              .then((response) => response.text())
+              .then(() => reloadChart(chart))
+              .catch((error) => {
+              console.error("Error:", error);
+              });
+          });
+        });
+      }
+      function activeDeleteButtons(container) {
+        const deleteButtons = container.querySelectorAll("[id^='delete-']");
+        deleteButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const chart = event.target.id.split("-")[1];
+            console.log(chart);
+            fetch(`/delete/${chart}`,
+              { method: "DELETE" }
+            )
+              .then((response) => response.text())
+              .then(() => reloadCharts())
+              .catch((error) => {
+              console.error("Error:", error);
+              });
+          });
+        });
+      }
+
+    </script>
+  </body>
+</html>

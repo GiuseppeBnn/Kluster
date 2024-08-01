@@ -1,0 +1,100 @@
+<% console.log(chart) %>
+<div
+  class="flex justify-between shadow-xl rounded px-4 pt-6 pb-6 mb-4 items-center text-xl my-4"
+  id="chart-container-<%= chart.jwt %>"
+>
+  <div><%= chart.name %></div>
+  <div class="grid grid-cols-3 grid-flow-row gap-2 justify-center">
+    <% if(chart.status=="inactive"){ %>
+    <center>
+      <a
+        title="Play"
+        class="cursor-pointer"
+        id="play-<%= chart.jwt %>"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          style="fill: rgba(0, 0, 0, 1)"
+          id="svg-<%= chart.jwt %>"
+        >
+          <path
+            d="M7 6v12l10-6z"
+            id="d-<%= chart.jwt %>"
+          ></path>
+        </svg>
+      </a>
+    </center>
+    <% } %> <% if(chart.status=="active"){ %>
+    <center>
+      <a
+        title="Stop"
+        class="cursor-pointer"
+        id="stop-<%= chart.jwt %>-<%= chart.status %>"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          style="fill: rgba(0, 0, 0, 1); transform: ; msfilter: "
+          id="svg-<%= chart.jwt %>"
+        >
+          <path
+            d="M7 7h10v10H7z"
+            id="d-<%= chart.jwt %>"
+          ></path>
+        </svg>
+      </a>
+    </center>
+    <% } %>
+    <center>
+      <a
+        title="Details"
+        class="cursor-pointer"
+        href="/details/<%= chart.jwt %>"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          style="fill: rgba(0, 0, 0, 1); transform: ; msfilter: "
+        >
+          <path
+            d="M19 15v-3h-2v3h-3v2h3v3h2v-3h3v-2h-.937zM4 7h11v2H4zm0 4h11v2H4zm0 4h8v2H4z"
+          ></path>
+        </svg>
+      </a>
+    </center>
+    <% if(chart.status=="inactive"){ %>
+    <center>
+      <div
+        title="Delete"
+        class="cursor-pointer b-0"
+        id="delete-<%= chart.jwt %>"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="36"
+          viewBox="0 0 24 24"
+          style="fill: rgba(0, 0, 0, 1); transform: ; msfilter: "
+          id="svg-<%= chart.jwt %>-del"
+        >
+          <path
+            d="M5 20a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8h2V6h-4V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H3v2h2zM9 4h6v2H9zM8 8h9v12H7V8z"
+            id="d-<%= chart.jwt %>-del"
+          ></path>
+          <path
+            d="M9 10h2v8H9zm4 0h2v8h-2z"
+            id="d-<%= chart.jwt %>-del"
+          ></path>
+        </svg>
+      </div>
+    </center>
+    <% } %>
+  </div>
+</div>
