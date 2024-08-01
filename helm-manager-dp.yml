@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: helm-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /shared/pv-helm-manager/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: helm-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: helm-manager-dp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helm-manager-dp
+  template:
+    metadata:
+      labels:
+        app: helm-manager-dp
+    spec:
+      containers:
+      - name: helm-manager-dp
+        image: golang:latest
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - mountPath: /helm-storage
+          name: helm-storage
+        command: ["/bin/bash", "-c","cd /helm-storage/helm-manager && go mod tidy && go run main.go"]
+        env:
+        - name: HELM_MANAGER_MODE
+          value: "k8s"
+      volumes:
+      - name: helm-storage
+        persistentVolumeClaim:
+          claimName: helm-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helm-manager
+spec:
+  selector:
+    app: helm-manager-dp
+  ports:
+  - protocol: TCP
+    port: 9000
+    targetPort: 9000
+---
+
