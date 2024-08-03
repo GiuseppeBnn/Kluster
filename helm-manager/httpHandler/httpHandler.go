@@ -1,11 +1,14 @@
 package httpHandler
 
 import (
-	"fmt"
+	"helm3-manager/models"
 	"helm3-manager/redisInterface"
 	"helm3-manager/relHandler"
+	"log"
 	"net/http"
 )
+
+var Message = new(models.Message)
 
 func ComposeMiddlewares(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
 	for _, middleware := range middlewares {
@@ -14,17 +17,28 @@ func ComposeMiddlewares(handler http.Handler, middlewares ...func(http.Handler) 
 	return handler
 }
 
+func CorsHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*") // permette a tutti di fare richieste, da cambiare in produzione
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, referredChart")
+		next.ServeHTTP(w, r)
+	})
+}
+
 // middleware che verifica la presenza di un token jwt e la sua validità
 func JwtTokenVerificationHandler(writer http.ResponseWriter, request *http.Request) {
 	token := request.Header.Get("Authorization")
 	//fmt.Println("New request with auth Token: ", token)
 	check, err := redisInterface.CheckPresence(token)
 	if err != nil {
-		http.Error(writer, "Error in token verification", http.StatusInternalServerError)
+		http.Error(writer, Message.JsonError("Error in token verification"), http.StatusInternalServerError)
+		log.Println("Error in token verification: ", err.Error())
 		return
 	}
 	if !check {
-		http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+		http.Error(writer, Message.JsonError("Unauthorized request"), http.StatusUnauthorized)
+		log.Println("Unauthorized request from", request.RemoteAddr)
 		return
 	}
 }
@@ -35,11 +49,13 @@ func UploadHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		check, err := relHandler.CheckNumberOfReleasePerToken(r.Header.Get("Authorization"))
 		if err != nil {
-			http.Error(w, "Error in file upload", http.StatusInternalServerError)
+			http.Error(w, Message.JsonError("Error in file upload"), http.StatusInternalServerError)
+			log.Println("Error in file upload: ", err.Error())
 			return
 		}
 		if !check {
-			http.Error(w, "You have uploaded already 2 releases", http.StatusForbidden)
+			http.Error(w, Message.JsonError("Forbidden request"), http.StatusForbidden)
+			log.Println("Forbidden request from", r.RemoteAddr, "for exceeding the number of releases")
 			return
 		}
 		if r.Method == "POST" {
@@ -47,17 +63,20 @@ func UploadHandler(next http.Handler) http.Handler {
 			//fmt.Println("New upload request with jwt: ", jwt)
 			err := relHandler.ZipHandler(r, jwt)
 			if err != nil {
-				http.Error(w, "Error in file upload", http.StatusInternalServerError)
+				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
+				log.Println("Error in file upload: ", err.Error())
 				return
 			}
 			err = relHandler.YamlHandler(r, jwt)
 			if err != nil {
-				http.Error(w, "Error in file upload", http.StatusInternalServerError)
+				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
+				log.Println("Error in file upload: ", err.Error())
 				return
 			}
 			err = relHandler.SaveToRedis(jwt, r.FormValue("name"), r.Header.Get("Authorization"))
 			if err != nil {
-				http.Error(w, "Error in file upload", http.StatusInternalServerError)
+				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
+				log.Println("Error in file upload: ", err.Error())
 				return
 			}
 
@@ -69,13 +88,19 @@ func UploadHandler(next http.Handler) http.Handler {
 func ListHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			err := relHandler.GetReleasesList(w, r.Header.Get("Authorization"))
+			json_rels, err := relHandler.GetReleasesList(w, r.Header.Get("Authorization"))
 			if err != nil {
-				http.Error(w, "Error in getting list", http.StatusInternalServerError)
+				http.Error(w, Message.JsonError("Error in getting list"), http.StatusInternalServerError)
+				log.Println("Error in getting list: ", err.Error())
 				return
 			}
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(Message.JsonMessage(json_rels)))
+			if err != nil {
+				log.Println("Could not write response", err)
+			}
 		}
-		next.ServeHTTP(w, r)
+
 	})
 }
 
@@ -84,8 +109,8 @@ func InstallHandler(next http.Handler) http.Handler {
 		if r.Method == "GET" {
 			err := relHandler.InstallRelease(w, r.Header.Get("Authorization"), r.Header.Get("referredChart"))
 			if err != nil {
-				fmt.Println("Error in installing release")
-				http.Error(w, "Error in installing release", http.StatusInternalServerError)
+				log.Println("Error in installing release")
+				http.Error(w, Message.JsonError("Error in installing release"), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -96,10 +121,11 @@ func InstallHandler(next http.Handler) http.Handler {
 func DeleteHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			fmt.Println("Deleting release")
+			log.Println("Deleting release")
 			err := relHandler.DeleteRelease(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
 			if err != nil {
-				http.Error(w, "Error in deleting release", http.StatusInternalServerError)
+				http.Error(w, Message.JsonError("Error in deleting release"), http.StatusInternalServerError)
+				log.Println("Error in deleting release: ", err.Error())
 				return
 			}
 		}
@@ -111,7 +137,8 @@ func StopHandler(next http.Handler) http.Handler {
 		if r.Method == "GET" {
 			err := relHandler.StopRelease(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
 			if err != nil {
-				http.Error(w, "Error in stopping release", http.StatusInternalServerError)
+				http.Error(w, Message.JsonError("Error in stopping release"), http.StatusInternalServerError)
+				log.Println("Error in stopping release: ", err.Error())
 				return
 			}
 		}
