@@ -57,7 +57,7 @@ func MakeUnicJwtForNamespace(name string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"iat": time.Now().Unix(),
 	})
-	tokenString, _ := token.SignedString([]byte(name))
+	tokenString, _ := token.SignedString([]byte(time.Now().String() + name))
 	return adaptToK8s(tokenString)
 }
 func makeReleaseDirIfNotExist(jwt string) {
@@ -179,7 +179,7 @@ func DeleteRelease(token string, jwt string) error {
 		return nil
 	}
 	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(jwt)
+	check, err := helmInterface.IsReleaseActive(jwt, rel["namespace"].(string))
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		return err
@@ -283,7 +283,7 @@ func checkAndSetActive(rels []string) ([]string, error) {
 		json.Unmarshal([]byte(rel), &json_rel)
 		log.Println("Checking if release is active")
 
-		check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string))
+		check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string), json_rel["namespace"].(string))
 		if err != nil {
 			log.Println("Could not check if release is active", err)
 			return nil, err
@@ -341,7 +341,7 @@ func InstallRelease(w http.ResponseWriter, token string, referredChart string) e
 		return nil
 	}
 	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string))
+	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string))
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		http.Error(w, "Error checking if release is active", http.StatusInternalServerError)
@@ -428,7 +428,7 @@ func StopRelease(token string, referredChart string) error {
 		return nil
 	}
 	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string))
+	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string))
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		return err
@@ -437,7 +437,7 @@ func StopRelease(token string, referredChart string) error {
 		log.Println("Release not active")
 		return nil
 	}
-	err = helmInterface.UninstallRelease(rel["jwt"].(string))
+	err = helmInterface.UninstallRelease(rel["jwt"].(string), rel["namespace"].(string))
 	if err != nil {
 		log.Println("Could not uninstall release", err)
 		return err
