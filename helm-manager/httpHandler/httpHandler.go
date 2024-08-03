@@ -79,9 +79,9 @@ func UploadHandler(next http.Handler) http.Handler {
 				log.Println("Error in file upload: ", err.Error())
 				return
 			}
+			w.WriteHeader(http.StatusOK)
 
 		}
-		next.ServeHTTP(w, r)
 	})
 }
 
@@ -113,23 +113,24 @@ func InstallHandler(next http.Handler) http.Handler {
 				http.Error(w, Message.JsonError("Error in installing release"), http.StatusInternalServerError)
 				return
 			}
+			w.WriteHeader(http.StatusOK)
 		}
-		next.ServeHTTP(w, r)
+
 	})
 }
 
 func DeleteHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			log.Println("Deleting release")
 			err := relHandler.DeleteRelease(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
 			if err != nil {
 				http.Error(w, Message.JsonError("Error in deleting release"), http.StatusInternalServerError)
 				log.Println("Error in deleting release: ", err.Error())
 				return
 			}
+			w.WriteHeader(http.StatusOK)
 		}
-		next.ServeHTTP(w, r)
+
 	})
 }
 func StopHandler(next http.Handler) http.Handler {
@@ -141,7 +142,7 @@ func StopHandler(next http.Handler) http.Handler {
 				log.Println("Error in stopping release: ", err.Error())
 				return
 			}
+			w.WriteHeader(http.StatusOK)
 		}
-		next.ServeHTTP(w, r)
 	})
 }

@@ -2,7 +2,6 @@ package redisInterface
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/redis/go-redis/v9"
@@ -22,7 +21,7 @@ func InsertInSet(key string, value string) error {
 	ctx := context.Background()
 	_, err := redisClient.SAdd(ctx, key, value).Result()
 	if err != nil {
-		log.Fatalf("Could not insert in set: %v", err)
+		log.Println("Could not insert in set: ", err)
 		return err
 	}
 	return nil
@@ -31,7 +30,7 @@ func GetAllSetFromKey(key string) ([]string, error) {
 	ctx := context.Background()
 	val, err := redisClient.SMembers(ctx, key).Result()
 	if err != nil {
-		log.Fatalf("Could not get key: %v", err)
+		log.Println("Could not get key: ", err)
 		return nil, err
 	}
 	return val, nil
@@ -40,7 +39,7 @@ func GetNumberOfSetFromKey(key string) (int64, error) {
 	ctx := context.Background()
 	val, err := redisClient.SCard(ctx, key).Result()
 	if err != nil {
-		log.Fatalf("Could not get key: %v", err)
+		log.Println("Could not get key: ", err)
 		return 0, err
 	}
 	return val, nil
@@ -50,7 +49,7 @@ func CheckPresence(key string) (bool, error) {
 	ctx := context.Background()
 	val, err := redisClient.Exists(ctx, key).Result()
 	if err != nil {
-		log.Fatalf("Could not get key: %v", err)
+		log.Println("Could not check presence: ", err)
 		return false, err
 	}
 	return val == 1, nil
@@ -59,7 +58,7 @@ func GetKeyValue(key string) (string, error) {
 	ctx := context.Background()
 	val, err := redisClient.Get(ctx, key).Result()
 	if err != nil {
-		log.Fatalf("Could not get key: %v", err)
+		log.Println("Could not get key: ", err)
 		return "", err
 	}
 	return val, nil
@@ -69,9 +68,9 @@ func DeleteFromSet(cf string, rel string) error {
 	ctx := context.Background()
 	_, err := redisClient.SRem(ctx, "rel-"+cf, rel).Result()
 	if err != nil {
-		log.Fatalf("Could not delete from set: %v", err)
+		log.Println("Could not delete from set: ", err)
 		return err
 	}
-	fmt.Println("Deleted from set")
+	log.Println("Deleted from set")
 	return nil
 }

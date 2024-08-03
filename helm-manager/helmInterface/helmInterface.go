@@ -1,7 +1,6 @@
 package helmInterface
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,49 +22,57 @@ func GetKubeConfig() string {
 	}
 	return kube_config
 }
-func GetKubernetesClientSet(kube_config string) *kubernetes.Clientset {
+func GetKubernetesClientSet(kube_config string) (*kubernetes.Clientset, error) {
 	//creiamo una nuova configurazione di Kubernetes
 	conf, err := clientcmd.BuildConfigFromFlags("", kube_config)
 	if err != nil {
-		log.Fatalf("Error building kubeconfig: %s", err.Error())
+		log.Println("Error building kubeconfig: ", err.Error())
+		return nil, err
+
 	}
 	//creiamo un nuovo client di Kubernetes
 	config, err := kubernetes.NewForConfig(conf)
 	if err != nil {
-		log.Fatalf("Error creating Kubernetes client: %v", err)
+		log.Println("Error creating Kubernetes client: ", err.Error())
+		return nil, err
 	}
-	return config
+	return config, nil
 }
 
-func GetNewHelmClient() *action.Configuration {
+func GetNewHelmClient() (*action.Configuration, error) {
 	actions_settings := cli.New()
 	actions_settings.KubeConfig = GetKubeConfig()
 	//passiamo un puntatore alla struct di actions che puo compiere Helm
 	actions := new(action.Configuration)
 	if err := actions.Init(actions_settings.RESTClientGetter(), "default", os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
-		log.Fatalf("Error building kubeconfig: %s", err.Error())
+		log.Println("Error initializing Helm client: ", err.Error())
+		return nil, err
 	}
-	return actions
+	return actions, nil
 }
 
 func Install(chart *chart.Chart, values map[string]interface{}, releaseName string, namespace string) error {
-	helm_client := GetNewHelmClient()
+	helm_client, err := GetNewHelmClient()
+	if err != nil {
+		log.Println("Error getting Helm client: " + err.Error())
+		return err
+	}
 	newRelease := action.NewInstall(helm_client)
 	newRelease.Namespace = namespace
 	newRelease.ReleaseName = releaseName
 	rel, err := newRelease.Run(chart, values)
 	if err != nil {
-		fmt.Println("Error installing release: " + err.Error())
+		log.Println("Error installing release: " + err.Error())
 		return err
 	}
-	fmt.Println("Installed" + rel.Name)
+	log.Println("Installed" + rel.Name)
 	return nil
 }
 
 func CreateChart(chart_name string) (*chart.Chart, error) {
 	templateFile, err := os.ReadFile("template.yaml")
 	if err != nil {
-		log.Fatalf("Error reading file: %s", err.Error())
+		log.Println("Error reading template file: ", err.Error())
 		return nil, err
 	}
 	mychart := &chart.Chart{
@@ -84,22 +91,27 @@ func GetReleaseList(helm_client *action.Configuration) ([]*release.Release, erro
 	list := action.NewList(helm_client)
 	rels, err := list.Run()
 	if err != nil {
-		log.Fatalf("Error getting list of releases: %s", err.Error())
+		log.Println("Error getting list of releases: ", err.Error())
 		return nil, err
 	}
 	return rels, nil
 }
 
 func IsReleaseActive(releaseName string) (bool, error) {
-	status := action.NewList(GetNewHelmClient()) //occhio qua
+	helm_client, err := GetNewHelmClient()
+	if err != nil {
+		log.Println("Error getting Helm client: " + err.Error())
+		return false, err
+	}
+	status := action.NewList(helm_client)
 	rels, err := status.Run()
 	if err != nil {
-		log.Fatalf("Error getting list of releases: %s", err.Error())
+		log.Println("Error getting list of releases: ", err.Error())
 		return false, err
 	}
 	for _, rel := range rels {
 		if rel.Name == releaseName {
-			fmt.Println("Release already active")
+			log.Println("Release already active")
 			return true, nil
 		}
 	}
@@ -108,21 +120,26 @@ func IsReleaseActive(releaseName string) (bool, error) {
 
 func GetValues(jwt string) (map[string]interface{}, error) {
 	//leggi values.yaml da file usando le chartutils ufficiali
-	values, err := chartutil.ReadValuesFile(fmt.Sprintf("/shared/uploads/%s/values.yaml", jwt))
+	values, err := chartutil.ReadValuesFile("/shared/uploads/" + jwt + "/values.yaml")
 	if err != nil {
-		log.Fatalf("Error reading values file: %s", err.Error())
+		log.Println("Error reading values file: ", err.Error())
 		return nil, err
 	}
 	return values.AsMap(), nil
 }
 
 func UninstallRelease(rel_jwt string) error {
-	uninstall := action.NewUninstall(GetNewHelmClient())
-	_, err := uninstall.Run(rel_jwt)
+	helm_client, err := GetNewHelmClient()
 	if err != nil {
-		log.Fatalf("Error uninstalling release: %s", err.Error())
+		log.Println("Error getting Helm client: " + err.Error())
 		return err
 	}
-	fmt.Println("Uninstalled release", rel_jwt)
+	uninstall := action.NewUninstall(helm_client)
+	_, err = uninstall.Run(rel_jwt)
+	if err != nil {
+		log.Println("Error uninstalling release: ", err.Error())
+		return err
+	}
+	log.Println("Uninstalled release", rel_jwt)
 	return nil
 }
