@@ -39,6 +39,7 @@ func GetKubernetesClientSet(kube_config string) *kubernetes.Clientset {
 
 func GetNewHelmClient() *action.Configuration {
 	actions_settings := cli.New()
+	actions_settings.KubeConfig = GetKubeConfig()
 	//passiamo un puntatore alla struct di actions che puo compiere Helm
 	actions := new(action.Configuration)
 	if err := actions.Init(actions_settings.RESTClientGetter(), "default", os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
