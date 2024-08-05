@@ -36,7 +36,14 @@
       function reloadChart(chartJwt){
         const container = document.getElementById(`chart-container-${chartJwt}`);
         fetch(`/chart-status/${chartJwt}`)
-          .then((response) => response.text())
+          .then((response) => {
+            if (response.status != 200){
+              const p_error = container.querySelector(`#p_error-${chartJwt}`);
+              p_error.innerHTML = "Chart not responding";
+              return
+            }
+            return response.text();
+          })
           .then((data) => {
             //convertire data in HTMLelement ed estrarre il contenuto
             const doc = convertDataToHtml(data);
@@ -101,12 +108,11 @@
         deleteButtons.forEach((button) => {
           button.addEventListener("click", (event) => {
             const chart = event.target.id.split("-")[1];
-            console.log(chart);
             fetch(`/delete/${chart}`,
               { method: "DELETE" }
             )
               .then((response) => response.text())
-              .then(() => reloadCharts())
+              .then(() => reloadChart(chart))
               .catch((error) => {
               console.error("Error:", error);
               });
