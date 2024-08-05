@@ -126,24 +126,41 @@ app.get("/upload", checkToken, (req, res) => {res.render("upload");});
 app.get("/chart-status/:chartJwt", checkToken, async (req, res) => {
   const response = await helmInterface.getListOfCharts(req.session.token);
   const charts = JSON.parse(response.message);
+  try{ 
   const chart = charts.find((chart) => chart.jwt == req.params.chartJwt);
   res.render("components/layout/dp-dash-el", { chart: chart, type: response.type });
-});
+  }catch(err){
+    return res.status(404).send("Chart not found");
+  }});
 
 
 app.patch("/play/:chartJwt",checkToken, async (req, res) => {
-  await helmInterface.startChart(req.params.chartJwt, req.session.token);
-  res.send("ok");
+  const result=await helmInterface.startChart(req.params.chartJwt, req.session.token);
+  if(result){
+    res.send("ok");
+  }else{
+    res.status(400).send("error");
+  }
 });
 
-app.patch("/stop/:chartName", checkToken,(req, res) => {
-  helmInterface.stopChart(req.params.chartName,req.session.token);
-  res.send("ok");
+app.patch("/stop/:chartName", checkToken,async (req, res) => {
+  const result= await helmInterface.stopChart(req.params.chartName,req.session.token);
+  if(result){
+    res.send("ok");
+  }
+  else{
+    res.status(400).send("error");
+  }
 });
 
-app.delete("/delete/:chartName", checkToken,(req, res) => {
-  helmInterface.deleteChart(req.params.chartName,req.session.token);
-  res.send("ok");
+app.delete("/delete/:chartName", checkToken,async (req, res) => {
+  const result = await helmInterface.deleteChart(req.params.chartName,req.session.token);
+  if(result){
+    res.send("ok");
+  }
+  else{
+    res.status(400).send("error");
+  }
 });
 
 
