@@ -1,18 +1,25 @@
-<header class="w-full bg-white shadow-md py-4 mb-12">
-  <div class="container mx-auto flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-700 pl-2">K8S_box UI</h1>
-    <nav>
-      <ul class="flex items-center">
+<header class="bg-white shadow-md py-4 mb-12">
+  <div class="container flex justify-between items-center">
+    <h1 class="text-xl font-bold pl-2 md:text-2xl">K8S_box UI</h1>
+    <nav class="mr-4">
+      <ul class="flex items-center gap-2">
         <li>
-          <a href="/dashboard" class="text-gray-700 hover:text-blue-500 px-2"
+          <a href="/dashboard" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
             >Dashboard</a
           >
         </li>
         <li>
-          <a href="/upload" class="text-gray-700 hover:text-blue-500 pr-2"
+          <a href="/upload" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
             >Upload</a
           >
         </li>
+        <% if (typeof login == 'undefined') { %>
+        <li>
+          <a href="/logout" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
+            >Logout</a
+          >
+        </li>
+        <% }%>
       </ul>
     </nav>
   </div>
