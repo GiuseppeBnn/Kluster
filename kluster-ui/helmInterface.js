@@ -1,7 +1,6 @@
 const axios = require('axios');
 const multer = require('multer');
 const FormData = require('form-data'); 
-
 const upload = multer();
 
 const goServerIp = "localhost";
@@ -11,30 +10,38 @@ const protocol = "http";
 //TODO: insert try and catch where necessary to handle errors
 
 function receiveAndCheckFiles(req, res, next) {
+    
     upload.fields([{ name: 'yaml' }, { name: 'file' }])(req, res, function (err) {
-        if (err) {
-            return res.status(400).send('Errore durante il caricamento dei file.');
+        try{
+            if (err) {
+                return res.status(400).send('Errore durante il caricamento dei file.');
+            }
+            const yamlFile = req.files.yaml[0];
+            if(typeof req.files.file !== 'undefined'){
+                const zipFile = req.files.file[0];
+                if (zipFile.size > 10 * 1024 * 1024) { // 10MB
+                    return res.status(400).send('Il file ZIP supera la dimensione massima consentita di 10MB.');
+                }
+            }
+            if (yamlFile.size > 1 * 1024 * 1024) { // 1MB
+                return res.status(400).send('Il file YAML supera la dimensione massima consentita di 1MB.');
+            }
+            next();
+        }catch (error) {
+            console.log(error);
+            return res.status(400).send({type:"error",message: "File upload error"});
         }
-        const yamlFile = req.files.yaml[0];
-        const zipFile = req.files.file[0];
-
-        if (yamlFile.size > 1 * 1024 * 1024) { // 1MB
-            return res.status(400).send('Il file YAML supera la dimensione massima consentita di 1MB.');
-        }
-        if (zipFile.size > 10 * 1024 * 1024) { // 10MB
-            return res.status(400).send('Il file ZIP supera la dimensione massima consentita di 10MB.');
-        }
-        next();
     });
 }
 
 async function forwardToGoServer(req, res) {
-    
-    const form = new FormData(); 
-    form.append('name', req.body.name);
-    form.append('yamlFile', req.files.yaml[0].buffer, "values.yaml");
-    form.append('zipFile', req.files.file[0].buffer, "mount.zip");
     try {
+        const form = new FormData(); 
+        form.append('name', req.body.name);
+        form.append('yamlFile', req.files.yaml[0].buffer, "values.yaml");
+        if(typeof req.files.file !== 'undefined'){
+            form.append('zipFile', req.files.file[0].buffer, "mount.zip");
+        }
         const formHeaders = form.getHeaders();
         const response = await axios.post(`${protocol}://${goServerIp}:${goServerPort}/upload`, form, {
             headers: {
@@ -42,21 +49,27 @@ async function forwardToGoServer(req, res) {
                 Authorization: `${req.session.token}`
             }
         });
-        console.log(response.data); // da cambiare con gestione risposta
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Errore durante l\'inoltro dei dati al server Go.');
+        console.log(error);
+        return res.status(400).send(error.response.data);
     }
+    res.status(200).send("uploaded");
 }
 
 async function getListOfCharts(token){
-    const response = await axios.get(`${protocol}://${goServerIp}:${goServerPort}/list`, {
-        headers: {
-            Authorization: token
-        }
-    });
-    return response.data;
+    try {
+        const response = await axios.get(`${protocol}://${goServerIp}:${goServerPort}/list`, {
+            headers: {
+                Authorization: token
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return {type: "error", message: '{"error": "Error getting list of charts"}'};
+    }
 }
+
 
 async function startChart(chartJwt, token ){
     try{
@@ -68,8 +81,7 @@ async function startChart(chartJwt, token ){
         });
         return response.data;
     } catch (error) {
-        console.error(error);
-        return error;
+        console.log(error);
     }
 }
 async function deleteChart(chartJwt, token ){
@@ -82,17 +94,21 @@ async function deleteChart(chartJwt, token ){
         });
         return response.data;
     } catch (error) {
-        console.error(error);
+        console.log(error);
         return error;
     }
 }
 function stopChart(chartName, token){
-    axios.get(`${protocol}://${goServerIp}:${goServerPort}/stop`, {
-        headers: {
-            Authorization: token,
-            referredChart: chartName
-        }
-    });
+    try{
+        axios.get(`${protocol}://${goServerIp}:${goServerPort}/stop`, {
+            headers: {
+                Authorization: token,
+                referredChart: chartName
+            }
+        });
+    }catch (error) {
+        console.log(error);
+    }
 }
 
 
