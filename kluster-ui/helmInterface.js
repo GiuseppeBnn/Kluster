@@ -51,6 +51,9 @@ async function forwardToGoServer(req, res) {
         });
     } catch (error) {
         console.log(error);
+        if(typeof error.response == 'undefined' || typeof error.response.data == 'undefined'){
+            return res.status(400).send({type:"error",message: "File upload error"});
+        }
         return res.status(400).send(error.response.data);
     }
     res.status(200).send("uploaded");
@@ -79,9 +82,10 @@ async function startChart(chartJwt, token ){
                 referredChart: chartJwt
             }
         });
-        return response.data;
+        return true;
     } catch (error) {
         console.log(error);
+        return false;
     }
 }
 async function deleteChart(chartJwt, token ){
@@ -92,22 +96,24 @@ async function deleteChart(chartJwt, token ){
                 referredChart: chartJwt
             }
         });
-        return response.data;
+        return true;
     } catch (error) {
         console.log(error);
-        return error;
+        return false;
     }
 }
-function stopChart(chartName, token){
+async function stopChart(chartName, token){
     try{
-        axios.get(`${protocol}://${goServerIp}:${goServerPort}/stop`, {
+        const response = await axios.get(`${protocol}://${goServerIp}:${goServerPort}/stop`, {
             headers: {
                 Authorization: token,
                 referredChart: chartName
             }
         });
+        return true;
     }catch (error) {
         console.log(error);
+        return false;
     }
 }
 
