@@ -20,20 +20,22 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="yaml">
                     Insert the values.yaml file (needed)
                 </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="file" name="yaml" id="yaml" accept=".yaml">
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="file" name="yaml" id="yaml" accept=".yaml" required>
             </div>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="file">
                     Choose the root file system zip file
                 </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="file" name="file" id="file" accept=".zip">
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="file" name="file" id="file" >
             </div>
             <div class="flex items-center justify-between">
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                     Upload
                 </button>
             </div>
+            <p class="text-primary text-sm italic mt-2" id="p-error"></p>
         </form>
+    
     </div>
 <script>
     const form = document.getElementById("form");
@@ -47,12 +49,17 @@
             method: "POST",
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
+        .then(response => {
+            if(response.status === 200) {
+                console.log("Upload successful");
+                window.location.href = "/dashboard";
             } else {
-                alert(data.message);
+                response.json().then(data => {
+                    if(data.type == "error") {
+                        document.getElementById("p-error").innerText = data.message;
+                        return;
+                    }
+                });
             }
         })
         .catch(error => {
