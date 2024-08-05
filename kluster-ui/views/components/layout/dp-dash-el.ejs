@@ -1,9 +1,10 @@
-<% console.log(chart) %>
 <div
-  class="flex justify-between shadow-xl rounded px-4 pt-6 pb-6 mb-4 items-center text-xl my-4"
+  class="flex justify-between shadow-xl rounded px-4 pt-6 pb-6 mb-4 items-center text-xl md:my-4 md:mx-20"
   id="chart-container-<%= chart.jwt %>"
 >
-  <div><%= chart.name %></div>
+  <div class="overflow-auto max-w-12 md:max-w-full"><%= chart.name %></div>
+  <div class="flex items-center gap-x-3.5">
+    <p class="text-sm text-primary" id="p_error-<%= chart.jwt %>"></p>
   <div class="grid grid-cols-3 grid-flow-row gap-2 justify-center">
     <% if(chart.status=="inactive"){ %>
     <center>
@@ -97,4 +98,5 @@
     </center>
     <% } %>
   </div>
+</div>
 </div>
