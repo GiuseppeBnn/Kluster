@@ -28,7 +28,31 @@
                     Login
                 </button>
             </div>
+                <p class="text-primary text-sm italic mt-2" id="p-error"></p>
         </form>
     </div>
+<script>
+    document.getElementById('form').addEventListener('submit', function(e){
+        e.preventDefault();
+        var cf = document.getElementById('cf').value;
+        var pw = document.getElementById('pw').value;
+        fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({cf: cf, pw: pw})
+        }).then(function(response){
+            if(response.status == 201){
+                console.log('Login successful');
+                window.location.href = '/dashboard';
+            } else {
+                response.json().then(function(data){
+                    document.getElementById('p-error').innerText = data.error;
+                });
+            }
+        });
+    });
+</script>
 </body>
 </html>
