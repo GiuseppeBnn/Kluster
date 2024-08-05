@@ -6,22 +6,23 @@ const RedisInterface = require("./redisInterface");
 const helmInterface = require("./helmInterface");
 const redisInterface = new RedisInterface("192.168.1.40", 30207); //da cambiare con ip e porta corretti
 const app = express();
+const jwtSecret="a very big secret"
+const sessionSecret="secret to change, it's important"
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   session({
-    secret: "segreto_da_cambiare", //secret for session, change it in production
-    resave: false,
+    secret: sessionSecret, //secret for session, change it in production
+    resave: true,
     saveUninitialized: false,
-    cookie: { maxAge: 3600000 },
+    //cookie: { maxAge: 3600000 },
   })
 );
 app.use(express.static(__dirname + "/build"));
 
 const port = 3000;
-const jwtSecret = "segreto_da_cambiare_jwt"; //secret for jwt token, change it
 
 function createTokenFromCf(cf) {
   return jwt.sign({ cf }, jwtSecret, { expiresIn: '1h' });
@@ -69,19 +70,19 @@ app.get("/", checkToken, (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  // da implementare controllo cf in server ldap con password e tutto
-  if (!ldapInterface.checkCF(req.body.cf)) {
-    return res.status(401).json({ error: "CF not valid" });
-  }
-  const token = createTokenFromCf(req.body.cf);
-  try {
+  ldapInterface.checkCfLdap(req.body.cf,req.body.pw).then(async (isAuth) => {
+  
+  if (isAuth) {   ///IMPORTANTE!!! da cambiare con if(isAuth)
+    const token = createTokenFromCf(req.body.cf);
     await redisInterface.setKeyValue(token, req.body.cf, expiry=3600);
     req.session.token = token;
-    res.redirect("/dashboard");
-  } catch (err) {
-    console.error("Error setting token in Redis:", err);
-    res.status(500).json({ error: "Internal server error" });   //tutti gli errori devono essere gestiti con un unico oggetto json
+    return res.header("Authorization", token).status(201).send("ok");
   }
+  res.status(400).send({ error: "Invalid credentials" });
+}).catch((error) => {
+  console.error("LDAP error:", error);
+  res.render("login", { error: "Something went wrong" ,login: true});
+});
 });
 
 app.get("/logout", checkToken, async (req, res) => {
@@ -106,29 +107,27 @@ app.get("/login", async (req, res) => {
     }
   }
   req.session.token = null;
-  res.render("login");
+  res.status(201).render("login",{login: true});
 });
 
-app.get("/dashboard", checkToken, (req, res) => {
-  res.render("dashboard");
-} );
+app.get("/dashboard", checkToken, (req, res) => {res.render("dashboard");});
   
-app.get("/charts-status", checkToken,async (req, res) => {
-  let charts = await helmInterface.getListOfCharts(req.session.token);
-  res.render("charts-status", { charts: charts });
+app.get("/charts-status", checkToken, async (req, res) => {
+  const response= await helmInterface.getListOfCharts(req.session.token);
+  const charts = JSON.parse(response.message);
+  res.render("charts-status", { charts: charts , type: response.type});
 });
+
 app.post("/upload", checkToken, helmInterface.receiveAndCheckFiles, helmInterface.forwardToGoServer);
 
 
-app.get("/upload", checkToken, (req, res) => {
-  res.render("upload");
-});
+app.get("/upload", checkToken, (req, res) => {res.render("upload");});
 
 app.get("/chart-status/:chartJwt", checkToken, async (req, res) => {
-  const charts = await helmInterface.getListOfCharts(req.session.token);
+  const response = await helmInterface.getListOfCharts(req.session.token);
+  const charts = JSON.parse(response.message);
   const chart = charts.find((chart) => chart.jwt == req.params.chartJwt);
-  console.log("CHART", chart);
-  res.render("components/layout/dp-dash-el", { chart: chart });
+  res.render("components/layout/dp-dash-el", { chart: chart, type: response.type });
 });
 
 
