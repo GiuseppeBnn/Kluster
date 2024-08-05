@@ -11,7 +11,7 @@ class redisInterface {
         console.log(`Redis client created at ${host}:${port}`);
         this.redis_client.on('error', function(err) {
             console.log(err);
-            return; // da verificare
+            return this.redis_client.quit();
         });
     }
     async setKeyValue(key, value, expiry) {

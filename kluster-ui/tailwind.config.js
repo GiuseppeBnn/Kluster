@@ -11,7 +11,7 @@ module.exports = {
       "content": "#fff",
       "content-dark": "#1e1e1e",
       "primary-focus": "#9B0400",
-      "secondary-focus": "#343448",
+      "secondary-focus": "#72728a",
       "base-100": "#EDEDED",
     }
   },
