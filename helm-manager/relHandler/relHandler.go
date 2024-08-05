@@ -9,6 +9,7 @@ import (
 	"helm3-manager/redisInterface"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,6 +22,25 @@ import (
 
 const maxReleasePerUser = 2
 const secretForJwt = "segretone_da_cambiare"
+
+func RemoveFolderDirectoryIfExist(jwt string) error {
+	err := os.RemoveAll("/shared/uploads/" + jwt)
+	if err != nil {
+		log.Println("Could not remove jwt directory", err)
+		return err
+	}
+	return nil
+}
+
+func checkZipFilePresence(r *http.Request) (multipart.File, *multipart.FileHeader, bool) {
+	r.ParseMultipartForm(10 << 20) // max 10 MB
+	file, header, err := r.FormFile("zipFile")
+	if err != nil {
+		log.Println("File not found")
+		return nil, nil, false
+	}
+	return file, header, true
+}
 
 func MakeUploadDirIfNotExist() error {
 	_, err := os.Stat("/shared/uploads")
@@ -60,7 +80,7 @@ func MakeUnicJwtForNamespace(name string) string {
 	tokenString, _ := token.SignedString([]byte(time.Now().String() + name))
 	return adaptToK8s(tokenString)
 }
-func makeReleaseDirIfNotExist(jwt string) {
+func MakeReleaseDirIfNotExist(jwt string) {
 	_, err := os.Stat("/shared/uploads/" + jwt)
 	if os.IsNotExist(err) {
 		os.Mkdir("/shared/uploads/"+jwt, 0755)
@@ -68,15 +88,12 @@ func makeReleaseDirIfNotExist(jwt string) {
 }
 
 func ZipHandler(r *http.Request, jwt string) error {
-	r.ParseMultipartForm(10 << 20) // max 10 MB
-	file, handler, err := r.FormFile("zipFile")
-	if err != nil {
-		log.Println("File not found")
-		return err
+	file, handler, presence := checkZipFilePresence(r)
+	if !presence {
+		return nil
 	}
 	defer file.Close()
 	if filepath.Ext(handler.Filename) == ".zip" {
-		makeReleaseDirIfNotExist(jwt)
 		// Legge il contenuto del file caricato in memoria
 		fileBytes, err := io.ReadAll(file)
 		if err != nil {
@@ -117,8 +134,7 @@ func ZipHandler(r *http.Request, jwt string) error {
 			}
 		}
 	} else {
-		log.Println("File is not a zip")
-		return err
+		return fmt.Errorf("file is not a zip")
 	}
 	return nil
 }

@@ -49,7 +49,7 @@ func UploadHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		check, err := relHandler.CheckNumberOfReleasePerToken(r.Header.Get("Authorization"))
 		if err != nil {
-			http.Error(w, Message.JsonError("Error in file upload"), http.StatusInternalServerError)
+			http.Error(w, Message.JsonError(err), http.StatusInternalServerError)
 			log.Println("Error in file upload: ", err.Error())
 			return
 		}
@@ -60,23 +60,15 @@ func UploadHandler(next http.Handler) http.Handler {
 		}
 		if r.Method == "POST" {
 			jwt := relHandler.MakeUnicJwt()
-			//fmt.Println("New upload request with jwt: ", jwt)
+			relHandler.MakeReleaseDirIfNotExist(jwt)
 			err := relHandler.ZipHandler(r, jwt)
-			if err != nil {
-				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
+			err2 := relHandler.YamlHandler(r, jwt)
+			err3 := relHandler.SaveToRedis(jwt, r.FormValue("name"), r.Header.Get("Authorization"))
+
+			if err != nil || err2 != nil || err3 != nil {
+				http.Error(w, Message.JsonError(err, err2, err3), http.StatusInternalServerError)
 				log.Println("Error in file upload: ", err.Error())
-				return
-			}
-			err = relHandler.YamlHandler(r, jwt)
-			if err != nil {
-				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
-				log.Println("Error in file upload: ", err.Error())
-				return
-			}
-			err = relHandler.SaveToRedis(jwt, r.FormValue("name"), r.Header.Get("Authorization"))
-			if err != nil {
-				http.Error(w, Message.JsonMessage("Error in file upload"), http.StatusInternalServerError)
-				log.Println("Error in file upload: ", err.Error())
+				relHandler.RemoveFolderDirectoryIfExist(jwt)
 				return
 			}
 			w.WriteHeader(http.StatusOK)
