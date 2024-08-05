@@ -10,20 +10,23 @@
   <body class="bg-content text-secondary">
     <%- include('components/layout/header') %>
     <div class="w-full flex flex-col min-h-screen p-8" id="dp-container"></div>
+    
     <script>
       const parser = new DOMParser();
       reloadCharts();
+      setInterval(reloadCharts, 8000);
       ////////////////////////////
       function reloadCharts() {
         const dp_container = document.getElementById("dp-container");
         //create a new div element that contains
         fetch("/charts-status")
-          .then((response) => response.text())
+          .then((response) => {
+            if (response.status != 200) return dp_container.innerHTML = `<p class="text-primary text-sm italic mt-2" id="p-error">General error</p>`;        
+            return response.text()})
           .then((data) => {
             dp_container.innerHTML = data;
           })
           .then(() => {
-            console.log("Charts status loaded");
             activeButtons(dp_container);
           })
           .catch((error) => {
@@ -41,7 +44,6 @@
             container.innerHTML = chart.innerHTML;
           })
           .then(() => {
-            console.log("Chart status loaded");
             activeButtons(container);
           })
           .catch((error) => {
