@@ -117,5 +117,20 @@ async function stopChart(chartName, token){
     }
 }
 
+async function getDetails(chartJwt, token){
+    try{
+        const response = await axios.get(`${protocol}://${goServerIp}:${goServerPort}/details`, {
+            headers: {
+                Authorization: token,
+                referredChart: chartJwt
+            }
+        });
+        return response.data;
+    }catch (error) {
+        console.log(error);
+        return {type: "error", message: '{"error": "Error getting details of chart"}'};
+    }
+}
 
-module.exports = { receiveAndCheckFiles, forwardToGoServer, getListOfCharts, startChart , deleteChart, stopChart};
+
+module.exports = { receiveAndCheckFiles, forwardToGoServer, getListOfCharts, startChart , deleteChart, stopChart, getDetails};

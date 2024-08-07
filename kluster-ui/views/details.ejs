@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Details</title>
+    <link href="/styles.css" rel="stylesheet" type="text/css" />
+  </head>
+
+  <body class="bg-content text-secondary">
+    <%- include('components/layout/header') %>
+    <div id="details_container-<%= jwt %>"></div>
+    <script>
+      const parser = new DOMParser();
+      reloadChart();
+      setInterval(reloadChart, 10000);
+
+      const temp = document.getElementById("temp").innerHTML;
+      console.log(JSON.parse(temp));
+
+      function reloadChart() {
+        const container = document.querySelector("[id^='details_container-']");
+        const chartJwt = splitId(container.id);
+        fetch(`/dp-details/${chartJwt}`)
+          .then((response) => {
+            if (response.status != 200) {
+              const p_error = container.querySelector(`#p_error-${chartJwt}`); //da gestire
+              p_error.innerHTML = "Chart not responding";
+              return;
+            }
+            return response.text();
+          })
+          .then((data) => {
+            const doc = convertDataToHtml(data);
+            container.innerHTML = doc.body.innerHTML;
+          })
+          .then(() => {
+            activeButtons(container);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      function convertDataToHtml(data) {
+        return parser.parseFromString(data, "text/html");
+      }
+      function activeButtons(container) {
+        activePlayButtons(container);
+        activeStopButtons(container);
+        activeDeleteButtons(container);
+      }
+      function splitId(id) {
+        let splitIndex = id.indexOf("-");
+        return id.substring(splitIndex + 1);
+      }
+
+      function activePlayButtons(container) {
+        const playButtons = container.querySelectorAll("[id^='play-']");
+        playButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            let chart = splitId(event.target.id);
+            console.log(chart);
+            fetch(`/play/${chart}`, { method: "PATCH" })
+              .then((response) => response.text())
+              .then(() => reloadChart(chart))
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          });
+        });
+      }
+      function activeStopButtons(container) {
+        const stopButtons = container.querySelectorAll("[id^='stop-']");
+        stopButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const chart = event.target.id.split("-")[1];
+            fetch(`/stop/${chart}`, { method: "PATCH" })
+              .then((response) => response.text())
+              .then(() => reloadChart(chart))
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          });
+        });
+      }
+      function activeDeleteButtons(container) {
+        const deleteButtons = container.querySelectorAll("[id^='delete-']");
+        deleteButtons.forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const chart = event.target.id.split("-")[1];
+            fetch(`/delete/${chart}`, { method: "DELETE" })
+              .then((response) => response.text())
+              .then(() => reloadChart(chart))
+              .catch((error) => {
+                console.error("Error:", error);
+              });
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
