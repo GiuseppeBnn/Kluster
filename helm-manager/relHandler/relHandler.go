@@ -539,3 +539,37 @@ func GetReleaseDetails(token string, jwt string) (string, error) {
 	}
 	return string(json_bytes), nil
 }
+
+func GetReleaseLogs(token string, jwt string, podName string) (string, error) {
+	json_rel, err := getReleaseFromToken(token, jwt)
+	if err != nil {
+		log.Println("Could not get release", err)
+		return "", err
+	}
+	helm_client, err := getHelmClientForNamespace(json_rel["namespace"].(string))
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		return "", err
+	}
+	check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string), json_rel["namespace"].(string), helm_client)
+	if err != nil {
+		log.Println("Could not check if release is active", err)
+		return "", err
+	}
+	if !check {
+		log.Println("Release not active")
+		return "", nil
+	}
+	logs, err := k8sInterface.GetLogsFromPods(json_rel["namespace"].(string), podName)
+	if err != nil {
+		log.Println("Could not get pod logs", err)
+		return "", err
+	}
+	json_rel["logs"] = logs
+	json_bytes, err := json.Marshal(json_rel)
+	if err != nil {
+		log.Println("Could not marshal json", err)
+		return "", err
+	}
+	return string(json_bytes), nil
+}

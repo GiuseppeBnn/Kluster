@@ -19,6 +19,7 @@ func main() {
 	middlewaresSetForDelete := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.DeleteHandler)
 	middlewaresSetForStop := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.StopHandler)
 	middlewaresSetForDetails := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.DetailsHandler)
+	middlewaresSetForLogs := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.LogsHandler)
 
 	http.Handle("/upload", middlewaresSetForUpload)
 	http.Handle("/list", middlewaresSetForList)
@@ -26,6 +27,7 @@ func main() {
 	http.Handle("/delete", middlewaresSetForDelete)
 	http.Handle("/stop", middlewaresSetForStop)
 	http.Handle("/details", middlewaresSetForDetails)
+	http.Handle("/logs", middlewaresSetForLogs)
 
 	log.Println("Server started at port " + listenPort)
 	log.Fatal(http.ListenAndServe(listenPort, nil))

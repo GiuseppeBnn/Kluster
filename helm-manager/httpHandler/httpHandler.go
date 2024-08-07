@@ -156,3 +156,20 @@ func DetailsHandler(next http.Handler) http.Handler {
 		}
 	})
 }
+func LogsHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			logs, err := relHandler.GetReleaseLogs(r.Header.Get("Authorization"), r.Header.Get("referredChart"), r.Header.Get("podName"))
+			if err != nil {
+				http.Error(w, Message.JsonError("Error in getting logs"), http.StatusInternalServerError)
+				log.Println("Error in getting logs: ", err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(Message.JsonMessage(logs)))
+			if err != nil {
+				log.Println("Could not write response", err)
+			}
+		}
+	})
+}

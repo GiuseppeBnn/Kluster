@@ -179,13 +179,13 @@ app.delete("/delete/:chartName", checkToken, async (req, res) => {
   }
 });
 
-app.get("/details/:chartName", checkToken, async (req, res) => {
-  res.render("details", { jwt: req.params.chartName });
+app.get("/details/:chartJwt", checkToken, async (req, res) => {
+  res.render("details", { jwt: req.params.chartJwt });
 });
 
-app.get("/dp-details/:chartName", checkToken, async (req, res) => {
+app.get("/dp-details/:chartJwt", checkToken, async (req, res) => {
   const response = await helmInterface.getDetails(
-    req.params.chartName,
+    req.params.chartJwt,
     req.session.token
   );
   try {
@@ -193,6 +193,24 @@ app.get("/dp-details/:chartName", checkToken, async (req, res) => {
     res.render("components/layout/dp-details-el", { chart: chart });
   } catch (err) {
     return res.status(404).send("Chart not found");
+  }
+});
+
+app.get("/logs/:chartJwt/:podName", checkToken, async (req, res) => {
+  res.render("logs", { jwt: req.params.chartJwt, pod: req.params.podName });
+});
+
+app.get("/dp-logs/:chartJwt/:podName", checkToken, async (req, res) => {
+  const response = await helmInterface.getDeploymentLogs(
+    req.params.chartJwt,
+    req.params.podName,
+    req.session.token
+  );
+  try {
+    const logs = JSON.parse(response.message);
+    res.render("components/layout/dp-logs-el", { chart: logs });
+  } catch (err) {
+    return res.status(404).send("Logs not found");
   }
 });
 

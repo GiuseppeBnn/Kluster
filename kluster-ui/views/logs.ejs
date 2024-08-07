@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logs</title>
+    <link href="/styles.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <%- include('components/layout/header') %>
+    <p class="text-gray-800 font-semibold m-8">Logs for <%= pod%></p>
+    <div
+      id="logs_container-<%= jwt %>"
+      class="bg-secondary text-content font-mono p-4 m-8 rounded-md h-44 md:h-96 overflow-y-scroll whitespace-pre-wrap"
+    ></div>
+    <script>
+      const parser = new DOMParser();
+      reloadLogs();
+      setInterval(reloadLogs, 4000);
+
+      function reloadLogs() {
+        const container = document.querySelector("[id^='logs_container-']");
+        const chartJwt = splitId(container.id);
+        fetch(`/dp-logs/${chartJwt}/<%= pod %>`)
+          .then((response) => {
+            if (response.status != 200) {
+              const p_error = container.querySelector(`#p_error-${chartJwt}`); //da gestire
+              p_error.innerHTML = "Chart not responding";
+              return;
+            }
+            return response.text();
+          })
+          .then((data) => {
+            const doc = convertDataToHtml(data);
+            container.innerHTML = doc.body.innerHTML;
+            container.scrollTop = container.scrollHeight;
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      function convertDataToHtml(data) {
+        return parser.parseFromString(data, "text/html");
+      }
+      function splitId(id) {
+        let splitIndex = id.indexOf("-");
+        return id.substring(splitIndex + 1);
+      }
+    </script>
+  </body>
+</html>
