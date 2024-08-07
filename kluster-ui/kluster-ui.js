@@ -6,8 +6,8 @@ const RedisInterface = require("./redisInterface");
 const helmInterface = require("./helmInterface");
 const redisInterface = new RedisInterface("192.168.1.40", 30207); //da cambiare con ip e porta corretti
 const app = express();
-const jwtSecret="a very big secret"
-const sessionSecret="secret to change, it's important"
+const jwtSecret = "a very big secret";
+const sessionSecret = "secret to change, it's important";
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
@@ -25,7 +25,7 @@ app.use(express.static(__dirname + "/build"));
 const port = 3000;
 
 function createTokenFromCf(cf) {
-  return jwt.sign({ cf }, jwtSecret, { expiresIn: '1h' });
+  return jwt.sign({ cf }, jwtSecret, { expiresIn: "1h" });
 }
 async function verifyToken(token) {
   try {
@@ -33,8 +33,7 @@ async function verifyToken(token) {
     const tokenExists = await redisInterface.checkTokenPresence(token);
     if (tokenExists && decoded.cf) {
       return true;
-    }
-    else {
+    } else {
       console.log("Token not found in Redis");
       return false;
     }
@@ -43,7 +42,6 @@ async function verifyToken(token) {
     return null;
   }
 }
-  
 
 async function checkToken(req, res, next) {
   const token = req.session.token;
@@ -53,14 +51,12 @@ async function checkToken(req, res, next) {
   try {
     if (await verifyToken(token)) {
       return next();
-    }
-    else {
+    } else {
       console.log("Token not found in Redis");
       res.redirect("/login");
     }
-    
   } catch (err) {
-    console.error("Token verification failed:", err);
+    console.error("Token verification failed");
     res.redirect("/login");
   }
 }
@@ -70,19 +66,22 @@ app.get("/", checkToken, (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  ldapInterface.checkCfLdap(req.body.cf,req.body.pw).then(async (isAuth) => {
-  
-  if (isAuth) {   ///IMPORTANTE!!! da cambiare con if(isAuth)
-    const token = createTokenFromCf(req.body.cf);
-    await redisInterface.setKeyValue(token, req.body.cf, expiry=3600);
-    req.session.token = token;
-    return res.header("Authorization", token).status(201).send("ok");
-  }
-  res.status(400).send({ error: "Invalid credentials" });
-}).catch((error) => {
-  console.error("LDAP error:", error);
-  res.render("login", { error: "Something went wrong" ,login: true});
-});
+  ldapInterface
+    .checkCfLdap(req.body.cf, req.body.pw)
+    .then(async (isAuth) => {
+      if (isAuth) {
+        ///IMPORTANTE!!! da cambiare con if(isAuth)
+        const token = createTokenFromCf(req.body.cf);
+        await redisInterface.setKeyValue(token, req.body.cf, (expiry = 3600));
+        req.session.token = token;
+        return res.header("Authorization", token).status(201).send("ok");
+      }
+      res.status(400).send({ error: "Invalid credentials" });
+    })
+    .catch((error) => {
+      console.error("LDAP error:", error);
+      res.render("login", { error: "Something went wrong", login: true });
+    });
 });
 
 app.get("/logout", checkToken, async (req, res) => {
@@ -99,74 +98,104 @@ app.get("/logout", checkToken, async (req, res) => {
 app.get("/login", async (req, res) => {
   if (req.session.token) {
     if (await verifyToken(req.session.token)) {
-        return res.redirect("/dashboard");
-    }
-    else {
+      return res.redirect("/dashboard");
+    } else {
       console.log("Token not found");
       req.session.token = null;
     }
   }
   req.session.token = null;
-  res.status(201).render("login",{login: true});
+  res.status(201).render("login", { login: true });
 });
 
-app.get("/dashboard", checkToken, (req, res) => {res.render("dashboard");});
-  
+app.get("/dashboard", checkToken, (req, res) => {
+  res.render("dashboard");
+});
+
 app.get("/charts-status", checkToken, async (req, res) => {
-  const response= await helmInterface.getListOfCharts(req.session.token);
+  const response = await helmInterface.getListOfCharts(req.session.token);
   const charts = JSON.parse(response.message);
-  res.render("charts-status", { charts: charts , type: response.type});
+  res.render("charts-status", { charts: charts, type: response.type });
 });
 
-app.post("/upload", checkToken, helmInterface.receiveAndCheckFiles, helmInterface.forwardToGoServer);
+app.post(
+  "/upload",
+  checkToken,
+  helmInterface.receiveAndCheckFiles,
+  helmInterface.forwardToGoServer
+);
 
-
-app.get("/upload", checkToken, (req, res) => {res.render("upload");});
+app.get("/upload", checkToken, (req, res) => {
+  res.render("upload");
+});
 
 app.get("/chart-status/:chartJwt", checkToken, async (req, res) => {
   const response = await helmInterface.getListOfCharts(req.session.token);
   const charts = JSON.parse(response.message);
-  try{ 
-  const chart = charts.find((chart) => chart.jwt == req.params.chartJwt);
-  res.render("components/layout/dp-dash-el", { chart: chart, type: response.type });
-  }catch(err){
+  try {
+    const chart = charts.find((chart) => chart.jwt == req.params.chartJwt);
+    res.render("components/layout/dp-dash-el", {
+      chart: chart,
+      type: response.type,
+    });
+  } catch (err) {
     return res.status(404).send("Chart not found");
-  }});
+  }
+});
 
-
-app.patch("/play/:chartJwt",checkToken, async (req, res) => {
-  const result=await helmInterface.startChart(req.params.chartJwt, req.session.token);
-  if(result){
+app.patch("/play/:chartJwt", checkToken, async (req, res) => {
+  const result = await helmInterface.startChart(
+    req.params.chartJwt,
+    req.session.token
+  );
+  if (result) {
     res.send("ok");
-  }else{
+  } else {
     res.status(400).send("error");
   }
 });
 
-app.patch("/stop/:chartName", checkToken,async (req, res) => {
-  const result= await helmInterface.stopChart(req.params.chartName,req.session.token);
-  if(result){
+app.patch("/stop/:chartName", checkToken, async (req, res) => {
+  const result = await helmInterface.stopChart(
+    req.params.chartName,
+    req.session.token
+  );
+  if (result) {
     res.send("ok");
-  }
-  else{
+  } else {
     res.status(400).send("error");
   }
 });
 
-app.delete("/delete/:chartName", checkToken,async (req, res) => {
-  const result = await helmInterface.deleteChart(req.params.chartName,req.session.token);
-  if(result){
+app.delete("/delete/:chartName", checkToken, async (req, res) => {
+  const result = await helmInterface.deleteChart(
+    req.params.chartName,
+    req.session.token
+  );
+  if (result) {
     res.send("ok");
-  }
-  else{
+  } else {
     res.status(400).send("error");
   }
 });
 
+app.get("/details/:chartName", checkToken, async (req, res) => {
+  res.render("details", { jwt: req.params.chartName });
+});
 
-
+app.get("/dp-details/:chartName", checkToken, async (req, res) => {
+  const response = await helmInterface.getDetails(
+    req.params.chartName,
+    req.session.token
+  );
+  try {
+    chart = JSON.parse(response.message);
+    res.render("components/layout/dp-details-el", { chart: chart });
+  } catch (err) {
+    return res.status(404).send("Chart not found");
+  }
+});
 
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
-
