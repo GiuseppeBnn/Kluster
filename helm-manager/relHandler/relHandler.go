@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"helm3-manager/helmInterface"
+	"helm3-manager/k8sInterface"
 	"helm3-manager/redisInterface"
 	"io"
 	"log"
@@ -18,6 +19,8 @@ import (
 	"unicode"
 
 	"github.com/golang-jwt/jwt/v4"
+	"helm.sh/helm/v3/pkg/action"
+	"k8s.io/client-go/kubernetes"
 )
 
 const maxReleasePerUser = 2
@@ -194,8 +197,19 @@ func DeleteRelease(token string, jwt string) error {
 		log.Println("Release not found")
 		return nil
 	}
-	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(jwt, rel["namespace"].(string))
+	kube_config := k8sInterface.GetKubeConfig()
+	kube_client_set, err := k8sInterface.GetKubernetesClientSet(kube_config)
+	if err != nil {
+		log.Println("Could not get Kubernetes client", err)
+		return err
+	}
+	helm_client, err := helmInterface.GetNewHelmClient(rel["namespace"].(string), kube_client_set, kube_config)
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		return err
+	}
+	// controlla se la release è già attiva, TODO: possibile dividere in due funzioni
+	check, err := helmInterface.IsReleaseActive(jwt, rel["namespace"].(string), helm_client)
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		return err
@@ -211,10 +225,6 @@ func DeleteRelease(token string, jwt string) error {
 		rel, err := getReleaseStringFromToken(token, jwt)
 		if err != nil {
 			log.Println("Could not get release", err)
-			return err
-		}
-		if err != nil {
-			log.Println("Could not Marshal release map", err)
 			return err
 		}
 		err = redisInterface.DeleteFromSet(cf, rel)
@@ -297,9 +307,12 @@ func checkAndSetActive(rels []string) ([]string, error) {
 	checked_rels := make([]string, 0)
 	for _, rel := range rels {
 		json.Unmarshal([]byte(rel), &json_rel)
-		log.Println("Checking if release is active")
-
-		check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string), json_rel["namespace"].(string))
+		helm_client, err := getHelmClientForNamespace(json_rel["namespace"].(string))
+		if err != nil {
+			log.Println("Could not get Helm client", err)
+			return nil, err
+		}
+		check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string), json_rel["namespace"].(string), helm_client)
 		if err != nil {
 			log.Println("Could not check if release is active", err)
 			return nil, err
@@ -343,6 +356,7 @@ func getReleaseFromToken(token string, jwt string) (map[string]interface{}, erro
 	return nil, nil
 }
 
+// TODO: controllare gli http error molto probabilmente non corretti
 func InstallRelease(w http.ResponseWriter, token string, referredChart string) error {
 	// controlla se la release appartiene all'utente che richiede l'installazione
 	rel, err := getReleaseFromToken(token, referredChart)
@@ -356,8 +370,14 @@ func InstallRelease(w http.ResponseWriter, token string, referredChart string) e
 		http.Error(w, "Release not found in your releases", http.StatusNotFound)
 		return nil
 	}
+	helm_client, err := getHelmClientForNamespace(rel["namespace"].(string))
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		http.Error(w, "Error getting Helm client", http.StatusInternalServerError)
+		return err
+	}
 	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string))
+	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string), helm_client)
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		http.Error(w, "Error checking if release is active", http.StatusInternalServerError)
@@ -380,7 +400,12 @@ func InstallRelease(w http.ResponseWriter, token string, referredChart string) e
 		http.Error(w, "Error getting values", http.StatusInternalServerError)
 		return err
 	}
-	err = helmInterface.Install(chart, values, rel["jwt"].(string), rel["namespace"].(string))
+	err = k8sInterface.CreateNamespaceIfNotExists(rel["namespace"].(string))
+	if err != nil {
+		log.Println("Error creating namespace: ", err.Error())
+		return err
+	}
+	err = helmInterface.Install(chart, values, rel["jwt"].(string), rel["namespace"].(string), helm_client)
 	if err != nil {
 		log.Println("Could not install release", err)
 		http.Error(w, "Error installing release", http.StatusInternalServerError)
@@ -399,16 +424,6 @@ func getValuesMapFromToken(rel_jwt string) (map[string]interface{}, error) {
 	values["rootDirectory"] = fmt.Sprintf("/shared/uploads/%s/mnt/", rel_jwt)
 	return values, nil
 }
-
-/*func printUnmarshalledValues(values map[string]interface{}) {
-	marshalled_values, err := json.Marshal(values)
-	if err != nil {
-		fmt.Println("Could not marshal values", err)
-	}
-	fmt.Println("Values: ", string(marshalled_values))
-	fmt.Printf("il tipo di values è %T\n", values)
-
-}*/
 
 func getReleaseStringFromToken(token string, jwt string) (string, error) {
 	cf, err := redisInterface.GetKeyValue(token)
@@ -443,8 +458,13 @@ func StopRelease(token string, referredChart string) error {
 		log.Println("Release not found")
 		return nil
 	}
+	helm_client, err := getHelmClientForNamespace(rel["namespace"].(string))
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		return err
+	}
 	// controlla se la release è già attiva
-	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string))
+	check, err := helmInterface.IsReleaseActive(rel["jwt"].(string), rel["namespace"].(string), helm_client)
 	if err != nil {
 		log.Println("Could not check if release is active", err)
 		return err
@@ -453,10 +473,69 @@ func StopRelease(token string, referredChart string) error {
 		log.Println("Release not active")
 		return nil
 	}
-	err = helmInterface.UninstallRelease(rel["jwt"].(string), rel["namespace"].(string))
+	err = helmInterface.UninstallRelease(rel["jwt"].(string), rel["namespace"].(string), helm_client)
 	if err != nil {
 		log.Println("Could not uninstall release", err)
 		return err
 	}
 	return nil
+}
+
+func getK8sClientSetAndConfig() (*kubernetes.Clientset, string, error) {
+	kube_config := k8sInterface.GetKubeConfig()
+	kube_client_set, err := k8sInterface.GetKubernetesClientSet(kube_config)
+	if err != nil {
+		log.Println("Could not get Kubernetes client", err)
+		return nil, "", err
+	}
+	return kube_client_set, kube_config, nil
+}
+
+func getHelmClientForNamespace(namespace string) (*action.Configuration, error) {
+	kube_client_set, kube_config, err := getK8sClientSetAndConfig()
+	if err != nil {
+		log.Println("Could not get Kubernetes client", err)
+		return nil, err
+	}
+	helm_client, err := helmInterface.GetNewHelmClient(namespace, kube_client_set, kube_config)
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		return nil, err
+	}
+	return helm_client, nil
+}
+
+func GetReleaseDetails(token string, jwt string) (string, error) {
+	json_rel, err := getReleaseFromToken(token, jwt)
+	if err != nil {
+		log.Println("Could not get release", err)
+		return "", err
+	}
+	helm_client, err := getHelmClientForNamespace(json_rel["namespace"].(string))
+	if err != nil {
+		log.Println("Could not get Helm client", err)
+		return "", err
+	}
+	check, err := helmInterface.IsReleaseActive(json_rel["jwt"].(string), json_rel["namespace"].(string), helm_client)
+	if err != nil {
+		log.Println("Could not check if release is active", err)
+		return "", err
+	}
+	if check {
+		json_rel["status"] = "active"
+	} else {
+		json_rel["status"] = "inactive"
+	}
+	details, err := k8sInterface.GetDeploymentsDetails(json_rel["namespace"].(string))
+	if err != nil {
+		log.Println("Could not get deployments details", err)
+		return "", err
+	}
+	json_rel["details"] = details
+	json_bytes, err := json.Marshal(json_rel)
+	if err != nil {
+		log.Println("Could not marshal json", err)
+		return "", err
+	}
+	return string(json_bytes), nil
 }

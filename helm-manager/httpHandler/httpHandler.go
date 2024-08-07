@@ -138,3 +138,21 @@ func StopHandler(next http.Handler) http.Handler {
 		}
 	})
 }
+
+func DetailsHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			details, err := relHandler.GetReleaseDetails(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
+			if err != nil {
+				http.Error(w, Message.JsonError("Error in getting details"), http.StatusInternalServerError)
+				log.Println("Error in getting details: ", err.Error())
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(Message.JsonMessage(details)))
+			if err != nil {
+				log.Println("Could not write response", err)
+			}
+		}
+	})
+}

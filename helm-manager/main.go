@@ -18,12 +18,14 @@ func main() {
 	middlewaresSetForInstall := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.InstallHandler)
 	middlewaresSetForDelete := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.DeleteHandler)
 	middlewaresSetForStop := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.StopHandler)
+	middlewaresSetForDetails := httpHandler.ComposeMiddlewares(jwtVerHandler, httpHandler.CorsHandler, httpHandler.DetailsHandler)
 
 	http.Handle("/upload", middlewaresSetForUpload)
 	http.Handle("/list", middlewaresSetForList)
 	http.Handle("/install", middlewaresSetForInstall)
 	http.Handle("/delete", middlewaresSetForDelete)
 	http.Handle("/stop", middlewaresSetForStop)
+	http.Handle("/details", middlewaresSetForDetails)
 
 	log.Println("Server started at port " + listenPort)
 	log.Fatal(http.ListenAndServe(listenPort, nil))
