@@ -10,7 +10,6 @@
   <body class="bg-content text-secondary">
     <%- include('components/layout/header') %>
     <div class="w-full flex flex-col min-h-screen p-8" id="dp-container"></div>
-    
     <script>
       const parser = new DOMParser();
       reloadCharts();
@@ -21,8 +20,10 @@
         //create a new div element that contains
         fetch("/charts-status")
           .then((response) => {
-            if (response.status != 200) return dp_container.innerHTML = `<p class="text-primary text-sm italic mt-2" id="p-error">General error</p>`;        
-            return response.text()})
+            if (response.status != 200)
+              return (dp_container.innerHTML = `<p class="text-primary text-sm italic mt-2" id="p-error">General error</p>`);
+            return response.text();
+          })
           .then((data) => {
             dp_container.innerHTML = data;
           })
@@ -33,14 +34,16 @@
             console.error("Error:", error);
           });
       }
-      function reloadChart(chartJwt){
-        const container = document.getElementById(`chart-container-${chartJwt}`);
+      function reloadChart(chartJwt) {
+        const container = document.getElementById(
+          `chart-container-${chartJwt}`
+        );
         fetch(`/chart-status/${chartJwt}`)
           .then((response) => {
-            if (response.status != 200){
+            if (response.status != 200) {
               const p_error = container.querySelector(`#p_error-${chartJwt}`);
               p_error.innerHTML = "Chart not responding";
-              return
+              return;
             }
             return response.text();
           })
@@ -76,13 +79,11 @@
           button.addEventListener("click", (event) => {
             let chart = splitId(event.target.id);
             console.log(chart);
-            fetch(`/play/${chart}`,
-              { method: "PATCH" }
-            )
+            fetch(`/play/${chart}`, { method: "PATCH" })
               .then((response) => response.text())
               .then(() => reloadChart(chart))
               .catch((error) => {
-              console.error("Error:", error);
+                console.error("Error:", error);
               });
           });
         });
@@ -92,13 +93,11 @@
         stopButtons.forEach((button) => {
           button.addEventListener("click", (event) => {
             const chart = event.target.id.split("-")[1];
-            fetch(`/stop/${chart}`,
-              { method: "PATCH" }
-            )
+            fetch(`/stop/${chart}`, { method: "PATCH" })
               .then((response) => response.text())
               .then(() => reloadChart(chart))
               .catch((error) => {
-              console.error("Error:", error);
+                console.error("Error:", error);
               });
           });
         });
@@ -108,18 +107,15 @@
         deleteButtons.forEach((button) => {
           button.addEventListener("click", (event) => {
             const chart = event.target.id.split("-")[1];
-            fetch(`/delete/${chart}`,
-              { method: "DELETE" }
-            )
+            fetch(`/delete/${chart}`, { method: "DELETE" })
               .then((response) => response.text())
               .then(() => reloadChart(chart))
               .catch((error) => {
-              console.error("Error:", error);
+                console.error("Error:", error);
               });
           });
         });
       }
-
     </script>
   </body>
 </html>
