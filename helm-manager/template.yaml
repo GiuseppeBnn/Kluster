@@ -87,7 +87,7 @@ kind: Service
 metadata:
   name: {{ .name }}
   labels:
-    app: {{ .name }}
+    app: {{ .name }}-deployment
 spec:
   {{ range .ports }}
   {{ if .hostPort }}
