@@ -1,10 +1,8 @@
 package helmInterface
 
 import (
-	"context"
 	"log"
 	"os"
-	"path/filepath"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -12,82 +10,22 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
-func createNamespaceIfNotExists(clientset *kubernetes.Clientset, namespace string) error {
-	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-	if err != nil {
-		ns := &v1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
-			},
-		}
-		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func GetKubeConfig() string {
-	var kube_config = os.Getenv("KUBECONFIG")
-	if kube_config == "" {
-		kube_config = filepath.Join(homedir.HomeDir(), ".kube", "config")
-	}
-	return kube_config
-}
-func GetKubernetesClientSet(kube_config string) (*kubernetes.Clientset, error) {
-	//creiamo una nuova configurazione di Kubernetes
-	conf, err := clientcmd.BuildConfigFromFlags("", kube_config)
-	if err != nil {
-		log.Println("Error building kubeconfig: ", err.Error())
-		return nil, err
-
-	}
-	//creiamo un nuovo client di Kubernetes
-	clientset, err := kubernetes.NewForConfig(conf)
-	if err != nil {
-		log.Println("Error creating Kubernetes client: ", err.Error())
-		return nil, err
-	}
-	return clientset, nil
-}
-
-func GetNewHelmClient(namespace string) (*action.Configuration, error) {
-	//creiamo un nuovo clientset di Kubernetes
-	clientset, err := GetKubernetesClientSet(GetKubeConfig())
-	if err != nil {
-		log.Println("Error getting Kubernetes clientset: ", err.Error())
-		return nil, err
-	}
-	err = createNamespaceIfNotExists(clientset, namespace)
-	if err != nil {
-		log.Println("Error creating namespace: ", err.Error())
-		return nil, err
-	}
+func GetNewHelmClient(namespace string, kube_client_set *kubernetes.Clientset, kube_config string) (*action.Configuration, error) {
 	actions_settings := cli.New()
-	actions_settings.KubeConfig = GetKubeConfig()
+	actions_settings.KubeConfig = kube_config
 	//passiamo un puntatore alla struct di actions che puo compiere Helm
 	actions := new(action.Configuration)
-	if err := actions.Init(kube.GetConfig(GetKubeConfig(), "", namespace), namespace, os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+	if err := actions.Init(kube.GetConfig(kube_config, "", namespace), namespace, os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
 		log.Println("Error initializing Helm client: ", err.Error())
 		return nil, err
 	}
 	return actions, nil
 }
 
-func Install(chart *chart.Chart, values map[string]interface{}, releaseName string, namespace string) error {
-	helm_client, err := GetNewHelmClient(namespace)
-	if err != nil {
-		log.Println("Error getting Helm client: " + err.Error())
-		return err
-	}
+func Install(chart *chart.Chart, values map[string]interface{}, releaseName string, namespace string, helm_client *action.Configuration) error {
 	newRelease := action.NewInstall(helm_client)
 	newRelease.Namespace = namespace
 	newRelease.ReleaseName = releaseName
@@ -128,14 +66,9 @@ func GetReleaseList(helm_client *action.Configuration) ([]*release.Release, erro
 	return rels, nil
 }
 
-func IsReleaseActive(rel_jwt string, namespace string) (bool, error) {
-	helm_client, err := GetNewHelmClient(namespace)
-	if err != nil {
-		log.Println("Error getting Helm client: " + err.Error())
-		return false, err
-	}
-	status := action.NewList(helm_client)
-	rels, err := status.Run()
+// TODO: evitare di iterare su tutta la lista di release, cercare per namespace
+func IsReleaseActive(rel_jwt string, namespace string, helm_client *action.Configuration) (bool, error) {
+	rels, err := GetReleaseList(helm_client)
 	if err != nil {
 		log.Println("Error getting list of releases: ", err.Error())
 		return false, err
@@ -159,14 +92,9 @@ func GetValues(jwt string) (map[string]interface{}, error) {
 	return values.AsMap(), nil
 }
 
-func UninstallRelease(rel_jwt string, namespace string) error {
-	helm_client, err := GetNewHelmClient(namespace)
-	if err != nil {
-		log.Println("Error getting Helm client: " + err.Error())
-		return err
-	}
+func UninstallRelease(rel_jwt string, namespace string, helm_client *action.Configuration) error {
 	uninstall := action.NewUninstall(helm_client)
-	_, err = uninstall.Run(rel_jwt)
+	_, err := uninstall.Run(rel_jwt)
 	if err != nil {
 		log.Println("Error uninstalling release: ", err.Error())
 		return err
