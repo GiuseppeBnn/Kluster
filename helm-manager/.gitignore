@@ -19,3 +19,6 @@ values/
 # System files
 .DS_Store
 Thumbs.db
+
+# result of gor build -o helm-manager
+helm-manager

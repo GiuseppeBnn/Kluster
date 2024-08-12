@@ -1,5 +1,5 @@
 {
-  "name": "k8s_box_ui",
+  "name": "kluster_ui",
   "version": "1.0.0",
   "main": "ui.js",
   "scripts": {
@@ -10,25 +10,17 @@
   "keywords": [],
   "author": "GiuseppeBnn",
   "license": "ISC",
-  "description": "A K8s_box UI",
+  "description": "Kluster UI project",
   "dependencies": {
-    "@kubernetes/client-node": "^0.21.0",
-    "adm-zip": "^0.5.12",
     "axios": "^1.7.2",
-    "bluebird": "^3.7.2",
-    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
     "express-session": "^1.18.0",
-    "extract-zip": "^2.0.1",
     "form-data": "^4.0.0",
-    "fs": "^0.0.1-security",
-    "fs-extra": "^11.2.0",
     "jsonwebtoken": "^9.0.2",
     "ldapjs": "^3.0.7",
     "multer": "^1.4.5-lts.1",
-    "node-helm": "^0.1.0",
-    "path": "^0.12.7",
     "redis": "^4.6.15",
     "tailwindcss": "^3.4.3"
   }
