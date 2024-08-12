@@ -4,10 +4,16 @@ const jwt = require("jsonwebtoken");
 const ldapInterface = require("./ldapInterface");
 const RedisInterface = require("./redisInterface");
 const helmInterface = require("./helmInterface");
-const redisInterface = new RedisInterface("192.168.1.40", 30207); //da cambiare con ip e porta corretti
+require("dotenv").config();
+const redisInterface = new RedisInterface(
+  process.env.REDIS_H,
+  process.env.REDIS_P
+);
 const app = express();
-const jwtSecret = "a very big secret";
-const sessionSecret = "secret to change, it's important";
+const jwtSecret = process.env.JWT_SECRET;
+const sessionSecret = process.env.SESSION_SECRET;
+const proxyUrl = process.env.PROXY_URL;
+const proxySecret = process.env.PROXY_SECRET;
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
@@ -17,7 +23,6 @@ app.use(
     secret: sessionSecret, //secret for session, change it in production
     resave: true,
     saveUninitialized: false,
-    //cookie: { maxAge: 3600000 },
   })
 );
 app.use(express.static(__dirname + "/build"));
@@ -61,6 +66,21 @@ async function checkToken(req, res, next) {
   }
 }
 
+async function createAndCacheProxyJwt(chartJwt, service, port, namespace) {
+  const newJwt = jwt.sign(
+    { chartJwt: chartJwt, service: service, port: port, namespace: namespace },
+    proxySecret,
+    { expiresIn: "3h" }
+  );
+  const value = JSON.stringify({
+    service: service,
+    port: port,
+    namespace: namespace,
+  });
+  await redisInterface.setKeyValue(newJwt, value, (expiry = 10800));
+  return newJwt;
+}
+
 app.get("/", checkToken, (req, res) => {
   res.redirect("/dashboard");
 });
@@ -69,7 +89,7 @@ app.post("/login", async (req, res) => {
   ldapInterface
     .checkCfLdap(req.body.cf, req.body.pw)
     .then(async (isAuth) => {
-      if (isAuth) {
+      if (true) {
         ///IMPORTANTE!!! da cambiare con if(isAuth)
         const token = createTokenFromCf(req.body.cf);
         await redisInterface.setKeyValue(token, req.body.cf, (expiry = 3600));
@@ -79,7 +99,7 @@ app.post("/login", async (req, res) => {
       res.status(400).send({ error: "Invalid credentials" });
     })
     .catch((error) => {
-      console.error("LDAP error:", error);
+      console.error("Auth error:", error);
       res.render("login", { error: "Something went wrong", login: true });
     });
 });
@@ -213,6 +233,26 @@ app.get("/dp-logs/:chartJwt/:podName", checkToken, async (req, res) => {
     return res.status(404).send("Logs not found");
   }
 });
+
+app.get(
+  "/forward-to-port/:chartJwt/:service/:port/:namespace",
+  checkToken,
+  async (req, res) => {
+    try {
+      const newJwt = await createAndCacheProxyJwt(
+        req.params.chartJwt,
+        req.params.service,
+        req.params.port,
+        req.params.namespace
+      );
+      const newUrl = `${proxyUrl}/connecttopodinport/${newJwt}`;
+      res.redirect(newUrl); // ovviamente in futuro usare HTTPS
+    } catch (err) {
+      console.error("Error forwarding to port:", err);
+      return res.status(500).send("Error forwarding to port");
+    }
+  }
+);
 
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
