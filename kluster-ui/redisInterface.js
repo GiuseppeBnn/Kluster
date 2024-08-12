@@ -1,53 +1,65 @@
-const redis = require('redis');
+const redis = require("redis");
 
 class redisInterface {
-    constructor(host, port) {
-        this.redis_client = null;
-        this.setClient(host, port);
-    }
+  constructor(host, port) {
+    this.host = host;
+    this.port = port;
+  }
 
-    setClient(host, port) {
-        this.redis_client = redis.createClient({url: `redis://${host}:${port}`});
-        console.log(`Redis client created at ${host}:${port}`);
-        this.redis_client.on('error', function(err) {
-            console.log(err);
-            return this.redis_client.quit();
-        });
+  getNewClient() {
+    const redis_client = redis.createClient({
+      url: `redis://${this.host}:${this.port}`,
+    });
+    redis_client.on("error", function (err) {
+      console.log(err);
+      return redis_client.quit();
+    });
+    return redis_client;
+  }
+  async setKeyValue(key, value, expiry) {
+    const redis_client = this.getNewClient();
+    await redis_client.connect();
+    if (expiry) {
+      redis_client.set(key, value, "EX", expiry);
+    } else {
+      redis_client.set(key, value);
     }
-    async setKeyValue(key, value, expiry) {
-        await this.redis_client.connect();
-        if(expiry){
-            this.redis_client.set(key, value, "EX", expiry)
-        }
-        else {
-            this.redis_client.set(key, value);
-        }
-        await this.redis_client.quit();
-    }
+    redis_client.quit();
+  }
 
-    async readValueFromKey(key) {
-        await this.redis_client.connect();
-        let val=await this.redis_client.get(key);
-        await this.redis_client.quit();
-        return val;
+  async readValueFromKey(key) {
+    try {
+      const redis_client = this.getNewClient();
+      await redis_client.connect();
+      let val = await redis_client.get(key);
+      await redis_client.quit();
+      return val;
+    } catch (err) {
+      console.error(err);
+      redis_client.quit();
+      return null;
     }
+  }
 
-    async checkTokenPresence(token) {
-        await this.redis_client.connect();
-        let b=await this.redis_client.exists(token); 
-        await this.redis_client.quit();
-        return b;       
+  async checkTokenPresence(token) {
+    try {
+      const redis_client = this.getNewClient();
+      await redis_client.connect();
+      let b = await redis_client.exists(token);
+      await redis_client.quit();
+      return b;
+    } catch (err) {
+      console.error("Token verification failed:", err);
+      return null;
     }
+  }
 
-    async delKey(key) {
-        await this.redis_client.connect();
-        await this.redis_client.del(key);
-        await this.redis_client.quit();
-    }
+  async delKey(key) {
+    const redis_client = this.getNewClient();
+    await redis_client.connect();
+    await redis_client.del(key);
+    await redis_client.quit();
+  }
 }
-
-
-
-
 
 module.exports = redisInterface;
