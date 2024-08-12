@@ -15,9 +15,6 @@
       reloadChart();
       setInterval(reloadChart, 10000);
 
-      const temp = document.getElementById("temp").innerHTML;
-      console.log(JSON.parse(temp));
-
       function reloadChart() {
         const container = document.querySelector("[id^='details_container-']");
         const chartJwt = splitId(container.id);

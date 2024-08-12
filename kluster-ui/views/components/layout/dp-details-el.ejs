@@ -97,7 +97,7 @@
 
   <!--///////////////////////////////////////////////////////////////-->
   <div class="md:text-xl pl-2">
-    Components: <%if (typeof chart.details != 'undefined') {%>no active
+    Components: <%if (typeof chart.details == 'undefined') {%>no active
     components <% } %>
   </div>
 
@@ -119,19 +119,20 @@
           <div class="flex gap-2">
             <p class="text-sm text-secondary">Ports:</p>
             <div>
-              <% for (let port of deployment.ports) { %> <% if(typeof
-              port.nodePort != 'undefined') { %>
+              <% for (let service of deployment.services.items) { %> <% for (let
+              port of service.spec.ports) { %> <% if (port.nodePort) { %>
               <a
-                href="/nodeport-forward/<%= chart.jwt%>/<%= port.nodePort %>"
-                class="text-sm text-secondary hover:text-secondary-focus"
+                href="/forward-to-port/<%= chart.jwt%>/<%= service.metadata.name%>/<%= port.port %>/<%= service.metadata.namespace %>"
+                target="_blank"
+                class="text-sm text-secondary hover:text-secondary-focus hover:cursor-pointer"
               >
                 <%= port.port %>:<%= port.nodePort %>
               </a>
               <% } else { %>
               <p class="text-sm text-secondary">
-                <%= port.port %>:<%= port.target %>
+                <%= port.port %>:<%= port.targetPort %>
               </p>
-              <% } } %>
+              <% } }} %>
             </div>
           </div>
         </div>
@@ -148,4 +149,4 @@
     <% } } %>
   </div>
 </div>
-<!-- <div id="temp"><%= JSON.stringify(chart) %></div> -->
+<!--<div id="temp"><%= JSON.stringify(chart) %></div> -->
