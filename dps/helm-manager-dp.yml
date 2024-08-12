@@ -59,26 +59,31 @@ spec:
         app: helm-manager-dp
     spec:
       containers:
-      - name: helm-manager-dp
-        image: golang:latest
-        ports:
-        - containerPort: 9000
-        volumeMounts:
-        - mountPath: /helm-storage/
-          name: helm-storage
-        - mountPath: /shared/uploads/
-          name: shared-storage
-        command: ["/bin/bash", "-c","cd /helm-storage/helm-manager && go run main.go"]
-        env:
-        - name: KUBECONFIG
-          value: "/helm-storage/.kube/config"
+        - name: helm-manager-dp
+          image: golang:latest
+          ports:
+            - containerPort: 9000
+          volumeMounts:
+            - mountPath: /helm-storage/
+              name: helm-storage
+            - mountPath: /shared/uploads/
+              name: shared-storage
+          command:
+            [
+              "/bin/bash",
+              "-c",
+              "cd /helm-storage/helm-manager && ./helm-manager",
+            ]
+          env:
+            - name: KUBECONFIG
+              value: "/helm-storage/.kube/config"
       volumes:
-      - name: helm-storage
-        persistentVolumeClaim:
-          claimName: helm-pvc
-      - name: shared-storage
-        persistentVolumeClaim:
-          claimName: shared-pvc
+        - name: helm-storage
+          persistentVolumeClaim:
+            claimName: helm-pvc
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: shared-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -88,10 +93,10 @@ spec:
   selector:
     app: helm-manager-dp
   ports:
-  - protocol: TCP
-    port: 9000
-    targetPort: 9000
-    nodePort: 30002
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      nodePort: 30002
   type: NodePort
 ---
 

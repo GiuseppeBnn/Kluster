@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: default
+data:
+  nginx.conf: |
+    events {
+      worker_connections 1024;
+    }
+    http {
+
+      client_max_body_size 10M;
+      server {
+        listen 80;
+        server_name kluster.ui;
+
+        location / {
+            proxy_pass http://kluster-ui-dp:80;
+        }
+      }
+
+      server {
+        listen 81;
+        server_name kluster.proxy;
+
+        location / {
+            proxy_pass http://kube-proxy-dp:80;
+        }
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx-daemonset
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: nginx-daemonset
+  template:
+    metadata:
+      labels:
+        name: nginx-daemonset
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - name: kluster-ui
+              containerPort: 80
+            - name: kube-proxy
+              containerPort: 81
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+  updateStrategy:
+    type: RollingUpdate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kluster-ui
+spec:
+  type: NodePort
+  selector:
+    name: nginx-daemonset
+  ports:
+    - name: kluster-ui
+      protocol: TCP
+      port: 80
+      nodePort: 30080
+    - name: kube-proxy
+      protocol: TCP
+      port: 81
+      nodePort: 30081
