@@ -2,12 +2,11 @@ const axios = require("axios");
 const multer = require("multer");
 const FormData = require("form-data");
 const upload = multer();
+require("dotenv").config();
 
-const goServerIp = "localhost";
-const goServerPort = 9000;
-const protocol = "http";
-
-//TODO: insert try and catch where necessary to handle errors
+const goServerIp = process.env.GO_SERVER_HOST;
+const goServerPort = process.env.GO_SERVER_PORT;
+const protocol = process.env.GO_SERVER_PROTOCOL;
 
 function receiveAndCheckFiles(req, res, next) {
   upload.fields([{ name: "yaml" }, { name: "file" }])(req, res, function (err) {
