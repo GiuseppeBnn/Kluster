@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tailwindcss build -i ./src/css/styles.css -o ./build/styles.css",
-    "start": "node kluster-ui.js"
+    "start": "node kluster-ui.js",
+    "dev": "nodemon -L kluster-ui.js"
   },
   "keywords": [],
   "author": "GiuseppeBnn",
@@ -21,6 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "ldapjs": "^3.0.7",
     "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.4",
     "redis": "^4.6.15",
     "tailwindcss": "^3.4.3"
   }

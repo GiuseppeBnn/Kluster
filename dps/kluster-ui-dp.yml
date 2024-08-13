@@ -47,7 +47,7 @@ spec:
             [
               /bin/sh,
               -c,
-              "cd /data && npm install && npm run build && npm run start",
+              "cd /data && npm install && npm run build && npm run dev",
             ]
       volumes:
         - name: kluster-ui-storage
