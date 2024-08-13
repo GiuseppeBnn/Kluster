@@ -60,6 +60,64 @@ class redisInterface {
     await redis_client.del(key);
     await redis_client.quit();
   }
+
+  async getDeliveredChartsJwt() {
+    try {
+      const redis_client = this.getNewClient();
+      await redis_client.connect();
+      let members = await redis_client.sMembers("deliveredCharts");
+      await redis_client.quit();
+      return members;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  async removeDeliveredChartJwt(chartJwt) {
+    const redis_client = this.getNewClient();
+    await redis_client.connect();
+    await redis_client.sRem("deliveredCharts", chartJwt);
+    await redis_client.quit();
+  }
+  async setDeliverToken(token, expiry) {
+    const redis_client = this.getNewClient();
+    await redis_client.connect();
+    if (expiry) {
+      await redis_client.sAdd("deliverTokens", token, "EX", expiry);
+    } else {
+      await redis_client.sAdd("deliverTokens", token);
+    }
+    await redis_client.quit();
+  }
+  async useDeliverToken(token) {
+    try {
+      const check = await this.checkDeliverTokenPresence(token);
+      if (!check) {
+        return false;
+      }
+      const redis_client = this.getNewClient();
+      await redis_client.connect();
+      await redis_client.sRem("deliverTokens", token);
+      await redis_client.quit();
+      return true;
+    } catch (err) {
+      console.error("Token verification failed:", err);
+      return null;
+    }
+  }
+  async checkDeliverTokenPresence(token) {
+    try {
+      const redis_client = this.getNewClient();
+      await redis_client.connect();
+      let b = await redis_client.sIsMember("deliverTokens", token);
+      await redis_client.quit();
+      return b;
+    } catch (err) {
+      console.error("Token verification failed:", err);
+      return null;
+    }
+  }
 }
 
 module.exports = redisInterface;

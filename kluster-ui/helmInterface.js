@@ -191,6 +191,41 @@ async function getDeploymentLogs(chartJwt, podName, token) {
   }
 }
 
+async function setDeliveredChart(chartJwt, token) {
+  try {
+    const response = await axios.get(
+      `${protocol}://${goServerIp}:${goServerPort}/delivered`,
+      {
+        headers: {
+          Authorization: token,
+          referredChart: chartJwt,
+        },
+      }
+    );
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+}
+
+async function setUndeliveredChart(chartJwt, token) {
+  try {
+    const response = await axios.get(
+      `${protocol}://${goServerIp}:${goServerPort}/undeliver`,
+      {
+        headers: {
+          Authorization: token,
+          referredChart: chartJwt,
+        },
+      }
+    );
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+}
 module.exports = {
   receiveAndCheckFiles,
   forwardToGoServer,
@@ -200,4 +235,6 @@ module.exports = {
   stopChart,
   getDetails,
   getDeploymentLogs,
+  setDeliveredChart,
+  setUndeliveredChart,
 };

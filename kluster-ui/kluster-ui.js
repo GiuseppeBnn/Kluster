@@ -14,6 +14,7 @@ const jwtSecret = process.env.JWT_SECRET;
 const sessionSecret = process.env.SESSION_SECRET;
 const proxyUrl = process.env.PROXY_URL;
 const proxySecret = process.env.PROXY_SECRET;
+const jwtDeliverSecret = process.env.JWT_DELIVER_SECRET;
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
@@ -29,22 +30,76 @@ app.use(express.static(__dirname + "/build"));
 
 const port = 3000;
 
-function createTokenFromCf(cf) {
-  return jwt.sign({ cf }, jwtSecret, { expiresIn: "1h" });
+function createDeliverToken() {
+  return jwt.sign(
+    {
+      role: "deliver",
+      time: new Date().getTime().toString(),
+    },
+    jwtDeliverSecret,
+    { expiresIn: "3h" }
+  );
 }
-async function verifyToken(token) {
+
+function createTokenFromCf(cf) {
+  return jwt.sign(
+    { role: "user", cf: cf, time: new Date().getTime().toString() },
+    jwtSecret,
+    {
+      expiresIn: "1h",
+    }
+  );
+}
+function createAdminToken() {
+  return jwt.sign(
+    {
+      role: "admin",
+      time: new Date().getTime().toString(),
+    },
+    jwtSecret,
+    { expiresIn: "3h" }
+  );
+}
+
+async function verifyAdminToken(token) {
   try {
     const decoded = jwt.verify(token, jwtSecret);
     const tokenExists = await redisInterface.checkTokenPresence(token);
-    if (tokenExists && decoded.cf) {
+    if (decoded.role == "admin" && tokenExists) {
       return true;
-    } else {
-      console.log("Token not found in Redis");
-      return false;
     }
+    return false;
   } catch (err) {
     console.error("Token verification failed:", err);
     return null;
+  }
+}
+
+async function verifyToken(token) {
+  let decoded;
+  try {
+    decoded = jwt.verify(token, jwtSecret);
+  } catch (err) {}
+  const tokenExists = await redisInterface.checkTokenPresence(token);
+  if (tokenExists && decoded.role) {
+    return true;
+  }
+  return false;
+}
+
+async function checkAdminToken(req, res, next) {
+  const token = req.session.token;
+  if (!token) {
+    return res.redirect("/login");
+  }
+  try {
+    if (await verifyAdminToken(token)) {
+      return next();
+    } else {
+      res.redirect("/login");
+    }
+  } catch (err) {
+    res.redirect("/login");
   }
 }
 
@@ -86,6 +141,13 @@ app.get("/", checkToken, (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
+  //CAMBIARE GESTIONE LOGIN PER CONTROLLO ADMIN
+  if (req.body.cf == "admin" && req.body.pw == "admin") {
+    const token = createAdminToken();
+    await redisInterface.setKeyValue(token, req.body.cf, (expiry = 10800)); //da cambiare assolutamente
+    req.session.token = token;
+    return res.header("Authorization", token).status(201).send("ok");
+  }
   ldapInterface
     .checkCfLdap(req.body.cf, req.body.pw)
     .then(async (isAuth) => {
@@ -128,14 +190,21 @@ app.get("/login", async (req, res) => {
   res.status(201).render("login", { login: true });
 });
 
-app.get("/dashboard", checkToken, (req, res) => {
-  res.render("dashboard");
+app.get("/dashboard", checkToken, async (req, res) => {
+  const isAdm = await verifyAdminToken(req.session.token);
+  if (isAdm) {
+    return res.redirect("/admin/dashboard");
+  } else {
+    res.render("dashboard");
+  }
 });
 
 app.get("/charts-status", checkToken, async (req, res) => {
   const response = await helmInterface.getListOfCharts(req.session.token);
   const charts = JSON.parse(response.message);
-  res.render("charts-status", { charts: charts, type: response.type });
+  res
+    .status(202)
+    .render("charts-status", { charts: charts, type: response.type });
 });
 
 app.post(
@@ -154,7 +223,7 @@ app.get("/chart-status/:chartJwt", checkToken, async (req, res) => {
   const charts = JSON.parse(response.message);
   try {
     const chart = charts.find((chart) => chart.jwt == req.params.chartJwt);
-    res.render("components/layout/dp-dash-el", {
+    res.status(202).render("components/layout/dp-dash-el", {
       chart: chart,
       type: response.type,
     });
@@ -254,6 +323,47 @@ app.get(
   }
 );
 
+app.get("/md-deliver/:chart/", checkToken, async (req, res) => {
+  res.render("components/layout/md-deliver", { chart: req.params.chart });
+});
+
+app.post("/deliver/", checkToken, async (req, res) => {
+  try {
+    let b = await redisInterface.useDeliverToken(req.body.deliveryToken);
+    if (b) {
+      await helmInterface.setDeliveredChart(
+        req.body.chartJwt,
+        req.session.token
+      );
+      console.log("Chart delivered", req.body.chartJwt);
+      return res.status(202).send("ok");
+    } else {
+      return res.status(400).send("error");
+    }
+  } catch (err) {
+    res.status(400).send("error");
+  }
+});
+
+app.get("/admin/dashboard", checkAdminToken, async (req, res) => {
+  res.render("admin_dashboard");
+});
+app.get("/admin/generate-deliver-token", checkAdminToken, async (req, res) => {
+  const deliverToken = createDeliverToken();
+  await redisInterface.setDeliverToken(deliverToken, (expiry = 108000));
+  res.status(202).send(deliverToken);
+});
+app.delete("/undeliver/:chartJwt", checkAdminToken, async (req, res) => {
+  try {
+    await helmInterface.setUndeliveredChart(
+      req.params.chartJwt,
+      req.session.token
+    );
+    res.status(202).send("ok");
+  } catch (err) {
+    res.status(400).send("error");
+  }
+});
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });

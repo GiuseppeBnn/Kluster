@@ -13,7 +13,7 @@
     <script>
       const parser = new DOMParser();
       reloadChart();
-      setInterval(reloadChart, 10000);
+      //setInterval(reloadChart, 10000);
 
       function reloadChart() {
         const container = document.querySelector("[id^='details_container-']");
@@ -44,7 +44,7 @@
       function activeButtons(container) {
         activePlayButtons(container);
         activeStopButtons(container);
-        activeDeleteButtons(container);
+        activeDeliverButton();
       }
       function splitId(id) {
         let splitIndex = id.indexOf("-");
@@ -80,18 +80,62 @@
           });
         });
       }
-      function activeDeleteButtons(container) {
-        const deleteButtons = container.querySelectorAll("[id^='delete-']");
-        deleteButtons.forEach((button) => {
+      function activeDeliverButton() {
+        const deliverButtons = document.querySelectorAll("[id^='deliver-']");
+        deliverButtons.forEach((button) => {
           button.addEventListener("click", (event) => {
             const chart = event.target.id.split("-")[1];
-            fetch(`/delete/${chart}`, { method: "DELETE" })
+            fetch(`/md-deliver/${chart}`)
               .then((response) => response.text())
-              .then(() => reloadChart(chart))
+              .then((data) => {
+                const doc = convertDataToHtml(data);
+                const modalOverlay = doc.querySelector(
+                  `#modalOverlay-${chart}`
+                );
+                document.body.appendChild(modalOverlay);
+                activeModalForm(modalOverlay, chart);
+              })
               .catch((error) => {
                 console.error("Error:", error);
               });
           });
+        });
+      }
+      function activeModalForm(modalOverlay, chart) {
+        const inputDeliverToken = modalOverlay.querySelector(
+          `#inputDeliverToken-${chart}`
+        );
+        console.log(chart);
+        const p_error = modalOverlay.querySelector(`#p_error-${chart}`);
+        const abortBtn = modalOverlay.querySelector("#abortBtn");
+        const deliverBtn = modalOverlay.querySelector(`#deliverModalBtn`);
+        abortBtn.addEventListener("click", () => {
+          modalOverlay.remove();
+        });
+        console.log(inputDeliverToken);
+        deliverBtn.addEventListener("click", () => {
+          fetch(`/deliver`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              deliveryToken: inputDeliverToken.value,
+              chartJwt: chart,
+            }),
+          })
+            .then((response) => {
+              if (response.status == 202) {
+                modalOverlay.remove();
+                return;
+              }
+              p_error.innerHTML = "Token not valid";
+              return;
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              p_error.innerHTML = "Error in token verification";
+            });
         });
       }
     </script>

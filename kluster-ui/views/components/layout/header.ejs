@@ -4,18 +4,25 @@
     <nav class="mr-4">
       <ul class="flex items-center gap-2">
         <li>
-          <a href="/dashboard" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
+          <a
+            href="/dashboard"
+            class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
             >Dashboard</a
           >
         </li>
+        <% if(typeof isAdmin == 'undefined') {%>
         <li>
-          <a href="/upload" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
+          <a
+            href="/upload"
+            class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
             >Upload</a
           >
         </li>
-        <% if (typeof login == 'undefined') { %>
+        <% } %> <% if (typeof login == 'undefined') { %>
         <li>
-          <a href="/logout" class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
+          <a
+            href="/logout"
+            class="text-secondary hover:text-secondary-focus text-sm md:text-xl"
             >Logout</a
           >
         </li>

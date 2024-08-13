@@ -173,3 +173,31 @@ func LogsHandler(next http.Handler) http.Handler {
 		}
 	})
 }
+
+func DeliveredListHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			err := relHandler.DeliverRelease(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
+			if err != nil {
+				http.Error(w, Message.JsonError("Error in delivering release"), http.StatusInternalServerError)
+				log.Println("Error in delivering release: ", err.Error())
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}
+	})
+}
+
+func UndeliverHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			err := relHandler.UndeliverRelease(r.Header.Get("Authorization"), r.Header.Get("referredChart"))
+			if err != nil {
+				http.Error(w, Message.JsonError("Error in undelivering release"), http.StatusInternalServerError)
+				log.Println("Error in undelivering release: ", err.Error())
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}
+	})
+}

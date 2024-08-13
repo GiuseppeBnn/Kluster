@@ -1,16 +1,13 @@
-<div class="py-2 md:py-4 md:px-10">
-  <div
-    class="flex justify-between shadow-2xl rounded-xl px-4 pt-6 pb-6 mb-4 items-center text-xl"
-    id="chart-container-<%= chart.jwt %>"
-  >
-    <div class="overflow-auto max-w-12 md:max-w-full md:text-2xl">
-      <%= chart.name %>
-    </div>
-    <div class="flex items-center gap-x-3.5">
-      <p class="text-sm text-primary" id="p_error-<%= chart.jwt %>"></p>
-      <div
-        class="grid grid-cols-3 grid-flow-row gap-2 justify-center items-center"
-      >
+<div class="py-4 px-4 md:px-10">
+  <div class="shadow-2xl rounded-xl px-4 pt-6 pb-6 mb-4">
+    <div
+      class="flex justify-between items-center text-xl"
+      id="chart-container-<%= chart.jwt %>"
+    >
+      <div class="overflow-auto max-w-44 md:max-w-full md:text-2xl">
+        <%= chart.name %>
+      </div>
+      <div class="flex gap-2 justify-center items-center">
         <% if(chart.status=="inactive"){ %>
         <center>
           <a title="Play" class="cursor-pointer" id="play-<%= chart.jwt %>">
@@ -45,59 +42,21 @@
             </svg>
           </a>
         </center>
-        <% } %> <% if(chart.status=="inactive"){ %>
-        <center>
-          <div
-            title="Delete"
-            class="cursor-pointer b-0"
-            id="delete-<%= chart.jwt %>"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="36"
-              viewBox="0 0 24 24"
-              style="fill: rgba(0, 0, 0, 1)"
-              id="svg-<%= chart.jwt %>-del"
-            >
-              <path
-                d="M5 20a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8h2V6h-4V4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H3v2h2zM9 4h6v2H9zM8 8h9v12H7V8z"
-                id="d-<%= chart.jwt %>-del"
-              ></path>
-              <path
-                d="M9 10h2v8H9zm4 0h2v8h-2z"
-                id="d-<%= chart.jwt %>-del"
-              ></path>
-            </svg>
-          </div>
-        </center>
         <% } %>
-        <center>
-          <a
-            title="Deliver release"
-            class="cursor-pointer"
-            id="deliver-<%= chart.jwt %>"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              style="fill: rgba(0, 0, 0, 1)"
-            >
-              <path
-                d="m21.426 11.095-17-8A1 1 0 0 0 3.03 4.242l1.212 4.849L12 12l-7.758 2.909-1.212 4.849a.998.998 0 0 0 1.396 1.147l17-8a1 1 0 0 0 0-1.81z"
-              ></path>
-            </svg>
-          </a>
-        </center>
+        <button
+          class="bg-content text-secondary rounded-md px-2 py-1 shadow-xl hover:text-secondary-focus hover:shadow-md"
+          id="deliver-<%= chart.jwt %>"
+        >
+          Deliver
+        </button>
       </div>
     </div>
+    <p id="p_error-<%= chart.jwt %>" class="text-primary text-sm"></p>
   </div>
 
   <!--///////////////////////////////////////////////////////////////-->
   <div class="md:text-xl pl-2">
-    Components: <%if (typeof chart.details == 'undefined') {%>no active
+    Components: <%if (typeof chart.details[0] == 'undefined') {%>no active
     components <% } %>
   </div>
 

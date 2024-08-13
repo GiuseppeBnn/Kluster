@@ -437,14 +437,15 @@ func getReleaseStringFromToken(token string, jwt string) (string, error) {
 		return "", err
 	}
 	for _, rel := range val {
-		json_rel := make(map[string]interface{})
+		json_rel := make(map[string]string)
 		json.Unmarshal([]byte(rel), &json_rel)
-		if json_rel["jwt"] == jwt {
+		temp := json_rel["jwt"]
+		if temp == jwt {
 			return rel, nil
 		}
-		log.Println("Release " + jwt + " not found")
 	}
-	return "", nil
+	log.Println("Release " + jwt + " not found")
+	return "", fmt.Errorf("release not found")
 }
 
 func StopRelease(token string, referredChart string) error {
@@ -572,4 +573,57 @@ func GetReleaseLogs(token string, jwt string, podName string) (string, error) {
 		return "", err
 	}
 	return string(json_bytes), nil
+}
+
+func GetReleaseFromCf(cf string, rel_token string) (string, error) {
+	val, err := redisInterface.GetAllSetFromKey("rel-" + cf)
+	if err != nil {
+		log.Println("Could not get set from Redis", err)
+		return "", err
+	}
+	for _, rel := range val {
+		json_rel := make(map[string]interface{})
+		json.Unmarshal([]byte(rel), &json_rel)
+		if json_rel["jwt"] == rel_token {
+			return rel, nil
+		}
+	}
+	return "", fmt.Errorf("release not found")
+}
+
+func DeliverRelease(token string, referredChart string) error {
+	rel, err := getReleaseStringFromToken(token, referredChart)
+	if err != nil {
+		log.Println("Could not get release", err)
+		return err
+	}
+	if rel == "" {
+		log.Println("Release not found")
+		return nil
+	}
+	err = redisInterface.InsertInSet("rel-admin", rel)
+	if err != nil {
+		log.Println("Could not insert in set", err)
+		return err
+	}
+	return nil
+}
+
+func UndeliverRelease(token string, referredChart string) error {
+	log.Println("Undeliver release", token, referredChart)
+	rel, err := getReleaseStringFromToken(token, referredChart)
+	if err != nil {
+		log.Println("Could not get release", err)
+		return err
+	}
+	if rel == "" {
+		log.Println("Release not found")
+		return nil
+	}
+	err = redisInterface.DeleteFromSet("admin", rel)
+	if err != nil {
+		log.Println("Could not delete from set", err)
+		return err
+	}
+	return nil
 }
