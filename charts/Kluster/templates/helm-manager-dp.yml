@@ -44,16 +44,16 @@ spec:
           volumeMounts:
             - mountPath: /shared/uploads/
               name: shared-storage
-            - name: kubeconfig
+            - name: kubeconfig-volume
               mountPath: /helm-storage/.kube/config
               subPath: config
           env:
             - name: KUBECONFIG
               value: "/helm-storage/.kube/config"
       volumes:
-        - name: kubeconfig
+        - name: kubeconfig-volume
           configMap:
-            name: kubeconfig-cfmap
+            name: kubeconfig
             items:
               - key: config
                 path: config

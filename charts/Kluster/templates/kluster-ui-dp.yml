@@ -21,7 +21,6 @@ spec:
             - name: env
               mountPath: /kluster-ui/.env
               subPath: .env
-          env:
 
       volumes:
         - name: env
