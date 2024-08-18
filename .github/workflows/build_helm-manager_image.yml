@@ -44,9 +44,9 @@ jobs:
           context: components/helm-manager
           file: components/helm-manager/Dockerfile
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/helm-manager:${{ env.IMAGE_TAG }}
-            ${{ secrets.DOCKER_USERNAME }}/helm-manager:latest
-            ${{ secrets.DOCKER_USERNAME }}/helm-manager:${{ env.IMAGE_TAG }}-${{ github.sha }}
+            helm-manager:${{ env.IMAGE_TAG }}
+            helm-manager:latest
+            helm-manager:${{ env.IMAGE_TAG }}-${{ github.sha }}
           platforms: linux/amd64
           builder: default
           labels: |

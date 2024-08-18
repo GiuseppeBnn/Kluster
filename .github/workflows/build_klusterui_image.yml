@@ -46,9 +46,9 @@ jobs:
           context: components/kluster-ui
           file: components/kluster-ui/Dockerfile
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/kluster-ui:${{ env.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/kluster-ui:latest
-            ${{ secrets.DOCKER_USERNAME }}/kluster-ui:${{ env.VERSION }}-${{ github.sha }}
+            kluster-ui:${{ env.VERSION }}
+            kluster-ui:latest
+            kluster-ui:${{ env.VERSION }}-${{ github.sha }}
           platforms: linux/amd64
           builder: default
           labels: |
