@@ -1,2 +1,21 @@
 kubeconfig: |
   insert here your kubeconfig file content
+
+env: |
+  GO_SERVER_HOST=helm-manager
+  GO_SERVER_PORT=9000
+  GO_SERVER_PROTOCOL=http
+
+  REDIS_H=redis
+  REDIS_P=6379
+
+  PROXY_URL=insert here the proxy url
+
+  JWT_SECRET=a very big secret
+  SESSION_SECRET=important secret to change
+  PROXY_SECRET=a big secret that has to change and has to be the same on both backend and proxy
+  JWT_ADMIN_SECRET=another big secret for the admin user
+  JWT_DELIVER_SECRET=another big secret for delivering deployments
+
+  LDAP_URL1=ldap://AD-UNICT-DC1.unict.ad
+  LDAP_URL2=ldap://AD-UNICT-DC2.unict.ad
