@@ -1,8 +1,8 @@
 FROM golang:latest
 
-COPY ./helm-manager /helm-storage/helm-manager/helm-manager
+COPY /bin/helm-manager /helm-storage/helm-manager
 
 EXPOSE 9000
 
-WORKDIR /helm-storage/helm-manager
+WORKDIR /helm-storage/
 ENTRYPOINT ["/bin/bash", "-c", "./helm-manager"]
