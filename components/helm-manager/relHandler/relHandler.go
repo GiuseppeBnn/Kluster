@@ -197,6 +197,7 @@ func DeleteRelease(token string, jwt string) error {
 		log.Println("Release not found")
 		return nil
 	}
+	ns := rel["namespace"].(string)
 	kube_config := k8sInterface.GetKubeConfig()
 	kube_client_set, err := k8sInterface.GetKubernetesClientSet(kube_config)
 	if err != nil {
@@ -237,6 +238,12 @@ func DeleteRelease(token string, jwt string) error {
 			log.Println("Could not remove jwt directory", err)
 			return err
 		}
+		err = k8sInterface.RemoveNamespaceIfExists(ns)
+		if err != nil {
+			log.Println("Could not remove namespace", err)
+			return err
+		}
+
 	}
 	return nil
 }

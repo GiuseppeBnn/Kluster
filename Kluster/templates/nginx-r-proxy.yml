@@ -25,7 +25,7 @@ data:
         server_name kluster.proxy;
 
         location / {
-            proxy_pass http://kube-proxy-dp:80;
+            proxy_pass http://kluster-proxy-dp:80;
         }
       }
     }

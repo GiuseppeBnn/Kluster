@@ -1,0 +1,57 @@
+name: Build KlusterProxy Component Image
+on:
+  push:
+    paths:
+      - "components/kluster-proxy/**"
+      - ".github/workflows/build_kluster-proxy_image.yml"
+  workflow_dispatch:
+
+jobs:
+  pkg_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      - name: Build the KlusterProxy Component Image
+        run: |
+          cd components/kluster-proxy
+          npm install
+  docker_build:
+    runs-on: ubuntu-latest
+    needs: pkg_build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Version from Git tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push the KlusterProxy Component Image
+        uses: docker/build-push-action@v5
+        with:
+          context: components/kluster-proxy
+          file: components/kluster-proxy/Dockerfile
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/kluster-proxy:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/kluster-proxy:latest
+            ${{ secrets.DOCKER_USERNAME }}/kluster-proxy:${{ env.VERSION }}-${{ github.sha }}
+          platforms: linux/amd64
+          builder: default
+          labels: |
+            org.opencontainers.image.title=KlusterProxy
+            org.opencontainers.image.description=KlusterProxy Component
+            org.opencontainers.image.version=${{ env.VERSION }}
+          push: true

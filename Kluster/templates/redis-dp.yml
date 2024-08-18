@@ -9,6 +9,7 @@ spec:
     - ReadWriteMany
   hostPath:
     path: "/shared/pv-redis/"
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -36,20 +37,20 @@ spec:
         app: redis-dp
     spec:
       containers:
-      - name: redis-dp
-        image: redis:latest
-        ports:
-        - containerPort: 6379
-        securityContext:
-          runAsUser: 1000
-          runAsGroup: 1000
-        volumeMounts:
-        - mountPath: /data
-          name: redis-storage
+        - name: redis-dp
+          image: redis:latest
+          ports:
+            - containerPort: 6379
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - mountPath: /data
+              name: redis-storage
       volumes:
-      - name: redis-storage
-        persistentVolumeClaim:
-          claimName: redis-pvc
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -59,10 +60,8 @@ spec:
   selector:
     app: redis-dp
   ports:
-  - protocol: TCP
-    port: 6379
-    targetPort: 6379
-    nodePort: 30207
-  type: NodePort
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
 ---
 

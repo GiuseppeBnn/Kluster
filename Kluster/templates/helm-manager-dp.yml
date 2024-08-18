@@ -1,37 +1,15 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: helm-pv
-spec:
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteMany
-  hostPath:
-    path: /shared/pv-helm-manager/
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: helm-pvc
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
   name: shared-pv
 spec:
   capacity:
-    storage: 1Gi
+    storage: 2Gi
   accessModes:
     - ReadWriteMany
   hostPath:
     path: /shared/uploads/
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -42,10 +20,10 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: 1Gi
+      storage: 2Gi
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: helm-manager-dp
 spec:
@@ -64,23 +42,17 @@ spec:
           ports:
             - containerPort: 9000
           volumeMounts:
-            - mountPath: /helm-storage/
-              name: helm-storage
             - mountPath: /shared/uploads/
               name: shared-storage
-          command:
-            [
-              "/bin/bash",
-              "-c",
-              "cd /helm-storage/helm-manager && ./helm-manager",
-            ]
+            - name: kubeconfig
+              mountPath: /helm-storage/.kube/config
           env:
             - name: KUBECONFIG
               value: "/helm-storage/.kube/config"
       volumes:
-        - name: helm-storage
-          persistentVolumeClaim:
-            claimName: helm-pvc
+        - name: kubeconfig
+          configMap:
+            name: kubeconfig-cfmap
         - name: shared-storage
           persistentVolumeClaim:
             claimName: shared-pvc
@@ -96,7 +68,5 @@ spec:
     - protocol: TCP
       port: 9000
       targetPort: 9000
-      nodePort: 30002
-  type: NodePort
 ---
 
