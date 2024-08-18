@@ -7,24 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  pkg_build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up node
-        uses: actions/setup-node@v2
-        with:
-          node-version: "14"
-      - name: Build the KlusterUI Component Image
-        run: |
-          cd components/kluster-ui
-          npm install
-          npm run build
   docker_build:
     runs-on: ubuntu-latest
-    needs: pkg_build
     steps:
       - name: Checkout
         uses: actions/checkout@v3

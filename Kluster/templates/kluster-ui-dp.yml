@@ -14,9 +14,22 @@ spec:
     spec:
       containers:
         - name: kluster-ui-dp
-          image: node:latest
+          image: giuseppebonanno99/klusterui:latest
           ports:
             - containerPort: 3000
+          volumeMounts:
+            - name: env
+              mountPath: /kluster-ui/.env
+              subPath: .env
+          env:
+
+      volumes:
+        - name: env
+          configMap:
+            name: env-cfmap
+            items:
+              - key: .env
+                path: .env
 ---
 apiVersion: v1
 kind: Service

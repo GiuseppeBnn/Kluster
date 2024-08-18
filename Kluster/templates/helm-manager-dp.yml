@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: helm-manager-dp
-          image: golang:latest
+          image: giuseppebonanno99/helmmanager:latest
           ports:
             - containerPort: 9000
           volumeMounts:
@@ -46,6 +46,7 @@ spec:
               name: shared-storage
             - name: kubeconfig
               mountPath: /helm-storage/.kube/config
+              subPath: config
           env:
             - name: KUBECONFIG
               value: "/helm-storage/.kube/config"
@@ -53,6 +54,9 @@ spec:
         - name: kubeconfig
           configMap:
             name: kubeconfig-cfmap
+            items:
+              - key: config
+                path: config
         - name: shared-storage
           persistentVolumeClaim:
             claimName: shared-pvc

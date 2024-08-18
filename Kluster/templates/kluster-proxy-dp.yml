@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: kluster-proxy-dp
-          image: node:latest
+          image: giuseppebonanno99/klusterproxy:latest
           ports:
             - containerPort: 3001
 

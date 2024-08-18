@@ -151,8 +151,7 @@ app.post("/login", async (req, res) => {
   ldapInterface
     .checkCfLdap(req.body.cf, req.body.pw)
     .then(async (isAuth) => {
-      if (true) {
-        ///IMPORTANTE!!! da cambiare con if(isAuth)
+      if (isAuth) {
         const token = createTokenFromCf(req.body.cf);
         await redisInterface.setKeyValue(token, req.body.cf, (expiry = 3600));
         req.session.token = token;
