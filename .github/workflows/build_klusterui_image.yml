@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Get current date
+      - name: Get date
         id: date
         run: echo "VERSION=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
@@ -46,13 +46,8 @@ jobs:
           context: components/kluster-ui
           file: components/kluster-ui/Dockerfile
           tags: |
-            kluster-ui:${{ env.VERSION }}
-            kluster-ui:latest
-            kluster-ui:${{ env.VERSION }}-${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/klusterui:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/klusterui:latest
           platforms: linux/amd64
           builder: default
-          labels: |
-            org.opencontainers.image.title=KlusterUI
-            org.opencontainers.image.description=KlusterUI Component
-            org.opencontainers.image.version=${{ env.VERSION }}
           push: true

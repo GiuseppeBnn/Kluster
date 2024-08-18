@@ -45,13 +45,8 @@ jobs:
           context: components/kluster-proxy
           file: components/kluster-proxy/Dockerfile
           tags: |
-            kluster-proxy:${{ env.VERSION }}
-            kluster-proxy:latest
-            kluster-proxy:${{ env.VERSION }}-${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/klusterproxy:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/klusterproxy:latest
           platforms: linux/amd64
           builder: default
-          labels: |
-            org.opencontainers.image.title=KlusterProxy
-            org.opencontainers.image.description=KlusterProxy Component
-            org.opencontainers.image.version=${{ env.VERSION }}
           push: true
