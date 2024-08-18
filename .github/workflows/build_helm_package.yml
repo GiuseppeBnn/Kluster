@@ -33,17 +33,17 @@ jobs:
 
       - name: Package Helm Chart
         run: |
-          mkdir -p /charts
-          helm package /Kluster -d /charts
+          mkdir -p ${{ github.workspace }}/charts
+          helm package ${{ github.workspace }}/Kluster -d ${{ github.workspace }}/charts
 
       - name: Update Helm Repository Index
         run: |
-          helm repo index /charts/ --url https://github.com/GiuseppeBnn/Kluster/charts
+          helm repo index ${{ github.workspace }}/charts/ --url https://github.com/GiuseppeBnn/Kluster/charts
 
       - name: Commit and Push updated index.yaml
         run: |
           git config --global user.email "${{ secrets.EMAIL }}"
           git config --global user.name "GiuseppeBnn"
-          git add /charts/*
+          git add ${{ github.workspace }}/charts/*
           git commit -m "ci: update Helm repo index for version ${{ env.new_version }}"
           git push
