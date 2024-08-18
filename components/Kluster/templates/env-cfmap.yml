@@ -3,6 +3,6 @@ kind: ConfigMap
 metadata:
   name: env-cfmap
 data: |
-  {{ .values.env | indent 2 | default "" }}
+  {{ .values.env | indent 2 | default "no env file in config map" }}
 ---
 
