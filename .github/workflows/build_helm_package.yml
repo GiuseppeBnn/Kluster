@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "components/Kluster/**"
+      - "charts/Kluster/**"
   workflow_dispatch:
 
 jobs:
@@ -31,7 +31,5 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
-        with:
-          charts_dir: components/Kluster
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
