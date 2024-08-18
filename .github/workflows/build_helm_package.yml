@@ -29,7 +29,7 @@ jobs:
 
       - name: Update Helm Repository Index
         run: |
-          helm repo index ${{ github.workspace }}/charts/ --url https://<username>.github.io/<repository-name>/charts
+          helm repo index ${{ github.workspace }}/charts/ --url https://github.com/GiuseppeBnn/Kluster/charts
 
       - name: Commit and Push changes
         env:
