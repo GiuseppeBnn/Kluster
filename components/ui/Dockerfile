@@ -1,8 +1,8 @@
 FROM node:latest
 
-COPY . /kluster-ui
+COPY . /packs-ui
 
-WORKDIR /kluster-ui
+WORKDIR /packs-ui
 RUN npm install
 RUN npm run build
 EXPOSE 3000

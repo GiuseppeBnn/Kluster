@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kluster-proxy-dp
+  name: packs-proxy-dp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kluster-proxy-dp
+      app: packs-proxy-dp
   template:
     metadata:
       labels:
-        app: kluster-proxy-dp
+        app: packs-proxy-dp
     spec:
       containers:
-        - name: kluster-proxy-dp
-          image: giuseppebonanno99/klusterproxy:latest
+        - name: packs-proxy-dp
+          image: giuseppebonanno99/packsproxy:latest
           ports:
             - containerPort: 3001
 
@@ -22,10 +22,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kluster-proxy-dp
+  name: packs-proxy-dp
 spec:
   selector:
-    app: kluster-proxy-dp
+    app: packs-proxy-dp
   ports:
     - protocol: TCP
       port: 80

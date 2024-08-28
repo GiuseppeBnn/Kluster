@@ -13,19 +13,19 @@ data:
       client_max_body_size 10M;
       server {
         listen 80;
-        server_name kluster.ui;
+        server_name packs.ui;
 
         location / {
-            proxy_pass http://kluster-ui-dp:80;
+            proxy_pass http://packs-ui-dp:80;
         }
       }
 
       server {
         listen 81;
-        server_name kluster.proxy;
+        server_name packs.proxy;
 
         location / {
-            proxy_pass http://kluster-proxy-dp:80;
+            proxy_pass http://packs-proxy-dp:80;
         }
       }
     }

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "charts/Kluster/**"
+      - "charts/PACKS/**"
   workflow_dispatch:
 
 jobs:

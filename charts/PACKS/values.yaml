@@ -1,7 +1,7 @@
 env:
   REDIS_H: redis
   REDIS_P: 6379
-  PROXY_URL: http://
+  PROXY_URL: http://someurl.com
   JWT_SECRET: a very big secret
   SESSION_SECRET: important secret to change
   PROXY_SECRET: a big secret that has to change and has to be the same on both backend and proxy

@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kluster-ui-dp
+  name: packs-ui-dp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kluster-ui-dp
+      app: packs-ui-dp
   template:
     metadata:
       labels:
-        app: kluster-ui-dp
+        app: packs-ui-dp
     spec:
       containers:
-        - name: kluster-ui-dp
-          image: giuseppebonanno99/klusterui:latest
+        - name: packs-ui-dp
+          image: giuseppebonanno99/packsui:latest
           ports:
             - containerPort: 3000
           volumeMounts:
             - name: env
-              mountPath: /kluster-ui/.env
+              mountPath: /packs-ui/.env
               subPath: .env
 
       volumes:
@@ -33,10 +33,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kluster-ui-dp
+  name: packs-ui-dp
 spec:
   selector:
-    app: kluster-ui-dp
+    app: packs-ui-dp
   ports:
     - protocol: TCP
       port: 80

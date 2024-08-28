@@ -1,9 +1,9 @@
-name: Build KlusterProxy Component Image
+name: Build PACKS_UI Component Image
 on:
   push:
     paths:
-      - "components/kluster-proxy/**"
-      - ".github/workflows/build_kluster-proxy_image.yml"
+      - "components/ui/**"
+      - ".github/workflows/build_packsui_image.yml"
   workflow_dispatch:
 
 jobs:
@@ -12,8 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Get current date
+      - name: Get date
         id: date
         run: echo "VERSION=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
@@ -25,14 +24,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and push the KlusterProxy Component Image
+      - name: Build and push the PACKS_UI Component Image
         uses: docker/build-push-action@v5
         with:
-          context: components/kluster-proxy
-          file: components/kluster-proxy/Dockerfile
+          context: components/ui
+          file: components/ui/Dockerfile
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/klusterproxy:${{ env.VERSION }}
-            ${{ secrets.DOCKER_USERNAME }}/klusterproxy:latest
+            ${{ secrets.DOCKER_USERNAME }}/packsui:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/packsui:latest
           platforms: linux/amd64
           builder: default
           push: true

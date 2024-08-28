@@ -5,8 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tailwindcss build -i ./src/css/styles.css -o ./build/styles.css",
-    "start": "node kluster-ui.js",
-    "dev": "nodemon -L kluster-ui.js"
+    "start": "node packs-ui.js",
+    "dev": "nodemon -L packs-ui.js"
   },
   "keywords": [],
   "author": "GiuseppeBnn",
