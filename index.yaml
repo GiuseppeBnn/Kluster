@@ -21,4 +21,16 @@ entries:
     urls:
     - https://github.com/GiuseppeBnn/Kluster/releases/download/Kluster-0.1.0/Kluster-0.1.0.tgz
     version: 0.1.0
-generated: "2024-08-18T20:10:17.107733491Z"
+  PACKS:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2024-08-28T11:33:06.064699566Z"
+    description: A Helm chart for PACKS, which is a collection of components for the
+      PACKS project.
+    digest: 6ab552dff887c9fcecf07d9d5971a35d33634b8fceec706577909ff032415e71
+    name: PACKS
+    type: application
+    urls:
+    - https://github.com/GiuseppeBnn/PACKS/releases/download/PACKS-0.1.0/PACKS-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-08-28T11:33:06.064732929Z"
