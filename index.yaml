@@ -23,6 +23,17 @@ entries:
     version: 0.1.0
   PACKS:
   - apiVersion: v2
+    appVersion: 0.1.1
+    created: "2024-09-19T14:08:04.072703734Z"
+    description: A Helm chart for PACKS, which is a collection of components for the
+      PACKS project.
+    digest: 2e8c89cd5dc3dfb6a919599a865fb3debb6747c88062adc15fbab98865fd1440
+    name: PACKS
+    type: application
+    urls:
+    - https://github.com/GiuseppeBnn/PACKS/releases/download/PACKS-0.1.1/PACKS-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
     appVersion: 0.1.0
     created: "2024-08-28T11:33:06.064699566Z"
     description: A Helm chart for PACKS, which is a collection of components for the
@@ -33,4 +44,4 @@ entries:
     urls:
     - https://github.com/GiuseppeBnn/PACKS/releases/download/PACKS-0.1.0/PACKS-0.1.0.tgz
     version: 0.1.0
-generated: "2024-08-28T11:33:06.064732929Z"
+generated: "2024-09-19T14:08:04.072720195Z"
