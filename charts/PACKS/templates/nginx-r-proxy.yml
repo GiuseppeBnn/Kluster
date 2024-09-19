@@ -49,9 +49,9 @@ spec:
         - name: nginx
           image: nginx:latest
           ports:
-            - name: kluster-ui
+            - name: packs-ui
               containerPort: 80
-            - name: kube-proxy
+            - name: packs-proxy
               containerPort: 81
           volumeMounts:
             - name: nginx-config
@@ -67,17 +67,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kluster-ui
+  name: packs-ui
 spec:
   type: NodePort
   selector:
     name: nginx-daemonset
   ports:
-    - name: kluster-ui
+    - name: packs-ui
       protocol: TCP
       port: 80
       nodePort: 30080
-    - name: kube-proxy
+    - name: packs-proxy
       protocol: TCP
       port: 81
       nodePort: 30081

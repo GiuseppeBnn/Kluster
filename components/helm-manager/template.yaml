@@ -70,14 +70,9 @@ spec:
          {{- if .file }}
            {{- $sourcePath = .file }}
          {{- end }}
-      {{- if $globalValue.nfsIp }}
-        nfs:
-          server: {{ $globalValue.nfsIp }}
-          path: /{{ $globalValue.rootDirectory }}{{ if .file }}{{ dir $sourcePath }}{{ else }}{{ $sourcePath }}{{ end }}
-      {{- else }}
         hostPath:
           path: /{{ $globalValue.rootDirectory }}{{ if .file }}{{ dir $sourcePath }}{{ else }}{{ $sourcePath }}{{ end }}
-      {{- end }}
+
       {{- end }}
       {{- end }}
 ---

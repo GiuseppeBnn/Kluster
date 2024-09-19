@@ -79,7 +79,9 @@ async function verifyToken(token) {
   let decoded;
   try {
     decoded = jwt.verify(token, jwtSecret);
-  } catch (err) {}
+  } catch (err) {
+    return false;
+  }
   const tokenExists = await redisInterface.checkTokenPresence(token);
   if (tokenExists && decoded.role) {
     return true;
